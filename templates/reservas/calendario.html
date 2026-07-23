@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Calendario — Pádel{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-xl font-bold text-gray-800">Reservar pista</h1>
+  <div class="flex items-center gap-3">
+    {% if prev_fecha %}
+      <a href="?fecha={{ prev_fecha }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">&larr;</a>
+    {% else %}
+      <span class="px-3 py-1 bg-gray-100 rounded text-gray-400 text-sm">&larr;</span>
+    {% endif %}
+
+    <form method="get" class="inline">
+      <input type="date" name="fecha" value="{{ fecha }}"
+        class="border border-gray-300 rounded px-2 py-1 text-sm"
+        onchange="this.form.submit()">
+    </form>
+
+    {% if next_fecha %}
+      <a href="?fecha={{ next_fecha }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">&rarr;</a>
+    {% else %}
+      <span class="px-3 py-1 bg-gray-100 rounded text-gray-400 text-sm">&rarr;</span>
+    {% endif %}
+  </div>
+</div>
+
+{% for item in calendario %}
+  <div class="mb-8">
+    <h2 class="text-base font-semibold text-green-700 mb-3">{{ item.pista.nombre }}</h2>
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+      {% for franja in item.franjas %}
+        {% if franja.ocupada %}
+          <div class="px-3 py-2 rounded-lg bg-gray-200 text-gray-400 text-sm text-center cursor-not-allowed">
+            {{ franja.hora_inicio|time:"H:i" }}–{{ franja.hora_fin|time:"H:i" }}
+            <div class="text-xs">Ocupada</div>
+          </div>
+        {% else %}
+          <form method="post" action="{% url 'reservas:crear' %}">
+            {% csrf_token %}
+            <input type="hidden" name="pista" value="{{ item.pista.pk }}">
+            <input type="hidden" name="fecha" value="{{ fecha }}">
+            <input type="hidden" name="hora_inicio" value="{{ franja.hora_inicio }}">
+            <button type="submit"
+              class="w-full px-3 py-2 rounded-lg bg-green-100 hover:bg-green-600 hover:text-white text-green-800 text-sm text-center transition-colors">
+              {{ franja.hora_inicio|time:"H:i" }}–{{ franja.hora_fin|time:"H:i" }}
+              <div class="text-xs">Reservar</div>
+            </button>
+          </form>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+{% endblock %}

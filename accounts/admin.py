@@ -1,0 +1,22 @@
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import Usuario
+
+
+@admin.register(Usuario)
+class UsuarioAdmin(UserAdmin):
+    list_display = ('username', 'get_full_name', 'rol', 'vivienda', 'aprobado', 'is_active')
+    list_filter = ('rol', 'aprobado', 'vivienda__portal__urbanizacion')
+    search_fields = ('username', 'first_name', 'last_name', 'email')
+    actions = ['aprobar_usuarios']
+
+    fieldsets = UserAdmin.fieldsets + (
+        ('Datos de la urbanización', {'fields': ('vivienda', 'rol', 'aprobado', 'telefono')}),
+    )
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('Datos de la urbanización', {'fields': ('vivienda', 'rol', 'aprobado', 'telefono')}),
+    )
+
+    @admin.action(description='Aprobar usuarios seleccionados')
+    def aprobar_usuarios(self, request, queryset):
+        queryset.update(aprobado=True)

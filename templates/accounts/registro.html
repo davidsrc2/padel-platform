@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Registro — Pádel{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto mt-8 bg-white rounded-xl shadow p-8">
+  <h1 class="text-2xl font-bold text-green-700 mb-6 text-center">Crear cuenta</h1>
+  <p class="text-sm text-gray-500 mb-6 text-center">
+    Tu cuenta será revisada por el administrador antes de poder reservar.
+  </p>
+
+  <form method="post" class="space-y-4" id="registro-form">
+    {% csrf_token %}
+    {% for field in form %}
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-red-600 text-xs mt-1">{{ field.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="w-full bg-green-700 text-white py-2 rounded-lg font-semibold hover:bg-green-800 mt-2">
+      Solicitar registro
+    </button>
+  </form>
+  <p class="text-center text-sm text-gray-500 mt-4">
+    ¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}" class="text-green-700 hover:underline">Accede aquí</a>
+  </p>
+</div>
+
+<style>
+  select, input[type=text], input[type=email], input[type=password] {
+    width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db;
+    border-radius: 0.5rem; font-size: 0.875rem;
+  }
+</style>
+
+<script>
+  const urbSelect = document.getElementById('id_urbanizacion');
+  const portalSelect = document.getElementById('id_portal');
+  const viviendaSelect = document.getElementById('id_vivienda');
+
+  urbSelect.addEventListener('change', function() {
+    const urbId = this.value;
+    portalSelect.innerHTML = '<option value="">Cargando...</option>';
+    viviendaSelect.innerHTML = '<option value="">Selecciona tu piso</option>';
+    if (!urbId) return;
+    fetch(`{% url 'accounts:portales_ajax' %}?urbanizacion_id=${urbId}`)
+      .then(r => r.json())
+      .then(data => {
+        portalSelect.innerHTML = '<option value="">Selecciona el portal</option>';
+        data.portales.forEach(p => {
+          portalSelect.innerHTML += `<option value="${p.id}">Portal ${p.nombre}</option>`;
+        });
+      });
+  });
+
+  portalSelect.addEventListener('change', function() {
+    const portalId = this.value;
+    viviendaSelect.innerHTML = '<option value="">Cargando...</option>';
+    if (!portalId) return;
+    fetch(`{% url 'accounts:viviendas_ajax' %}?portal_id=${portalId}`)
+      .then(r => r.json())
+      .then(data => {
+        viviendaSelect.innerHTML = '<option value="">Selecciona tu piso</option>';
+        data.viviendas.forEach(v => {
+          viviendaSelect.innerHTML += `<option value="${v.id}">${v.label}</option>`;
+        });
+      });
+  });
+</script>
+{% endblock %}

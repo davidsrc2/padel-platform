@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Acceder — Pádel{% endblock %}
+
+{% block content %}
+<div class="max-w-sm mx-auto mt-12 bg-white rounded-xl shadow p-8">
+  <h1 class="text-2xl font-bold text-green-700 mb-6 text-center">Acceder</h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-red-600 text-xs mt-1">{{ field.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="w-full bg-green-700 text-white py-2 rounded-lg font-semibold hover:bg-green-800">
+      Entrar
+    </button>
+  </form>
+  <p class="text-center text-sm text-gray-500 mt-4">
+    ¿No tienes cuenta? <a href="{% url 'accounts:registro' %}" class="text-green-700 hover:underline">Regístrate</a>
+  </p>
+</div>
+
+<style>
+  input[type=text], input[type=password] {
+    width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db;
+    border-radius: 0.5rem; font-size: 0.875rem;
+  }
+</style>
+{% endblock %}
