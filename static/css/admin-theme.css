@@ -1,0 +1,73 @@
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+    --primary: #15803d;
+    --secondary: #166534;
+    --accent: #16a34a;
+    --primary-fg: #fff;
+
+    --header-color: #ecfdf5;
+    --header-branding-color: #ecfdf5;
+    --header-bg: #14532d;
+    --header-link-color: #fff;
+
+    --breadcrumbs-fg: #dcfce7;
+    --breadcrumbs-link-fg: #fff;
+    --breadcrumbs-bg: #166534;
+
+    --link-fg: #15803d;
+    --link-hover-color: #14532d;
+    --link-selected-fg: #166534;
+
+    --button-bg: #15803d;
+    --button-hover-bg: #14532d;
+    --default-button-bg: #15803d;
+    --default-button-hover-bg: #14532d;
+
+    --object-tools-bg: #16a34a;
+    --object-tools-hover-bg: #15803d;
+
+    --body-bg: #f9fafb;
+    --font-family-primary: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+#header {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+}
+
+#branding a:link, #branding a:visited {
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+div.breadcrumbs {
+    font-weight: 500;
+}
+
+.module {
+    border-radius: .5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.module h2, .module caption, .inline-group h2 {
+    border-radius: 0;
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    border-radius: .5rem;
+    font-weight: 600;
+}
+
+#changelist-filter {
+    border-radius: .5rem;
+    overflow: hidden;
+}
+
+.dashboard .module table th, .dashboard .module table td {
+    padding: 8px 12px;
+}
+
+#content-related .module {
+    border-radius: .5rem;
+}

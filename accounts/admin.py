@@ -2,6 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import Usuario
 
+admin.site.site_header = 'Pádel — Administración'
+admin.site.site_title = 'Pádel Admin'
+admin.site.index_title = 'Panel de gestión'
+
 
 @admin.register(Usuario)
 class UsuarioAdmin(UserAdmin):
