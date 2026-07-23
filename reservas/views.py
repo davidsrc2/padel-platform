@@ -7,6 +7,7 @@ from datetime import timedelta, datetime
 from .models import Reserva
 from .forms import ReservaForm
 from pistas.models import Pista
+from urbanizaciones.models import Urbanizacion
 
 
 def _franjas_disponibles(pista, fecha):
@@ -15,17 +16,22 @@ def _franjas_disponibles(pista, fecha):
     apertura = datetime.combine(fecha, urb.hora_apertura)
     cierre = datetime.combine(fecha, urb.hora_cierre)
     duracion = timedelta(minutes=urb.duracion_franja_minutos)
-    reservadas = set(
-        Reserva.objects.filter(
+    reservas_por_hora = {
+        r.hora_inicio: r
+        for r in Reserva.objects.filter(
             pista=pista, fecha=fecha, estado=Reserva.ESTADO_CONFIRMADA
-        ).values_list('hora_inicio', flat=True)
-    )
+        ).select_related('usuario')
+    }
+    ahora = timezone.localtime().replace(tzinfo=None)
     actual = apertura
     while actual + duracion <= cierre:
+        reserva = reservas_por_hora.get(actual.time())
         franjas.append({
             'hora_inicio': actual.time(),
             'hora_fin': (actual + duracion).time(),
-            'ocupada': actual.time() in reservadas,
+            'ocupada': reserva is not None,
+            'pasada': actual + duracion <= ahora,
+            'reservado_por': reserva.usuario if reserva else None,
         })
         actual += duracion
     return franjas
@@ -38,7 +44,16 @@ def calendario(request):
         return render(request, 'reservas/pendiente_aprobacion.html')
 
     urb = usuario.urbanizacion
+    urbanizaciones = None
+    if not urb and usuario.rol == usuario.ROL_SUPERADMIN:
+        urbanizaciones = Urbanizacion.objects.order_by('nombre')
+        urb_id = request.GET.get('urbanizacion')
+        urb = urbanizaciones.filter(pk=urb_id).first() if urb_id else urbanizaciones.first()
+
     if not urb:
+        if usuario.rol == usuario.ROL_SUPERADMIN:
+            messages.error(request, 'No hay ninguna urbanización creada todavía.')
+            return redirect('accounts:login')
         messages.error(request, 'No tienes una urbanización asignada.')
         return redirect('accounts:login')
 
@@ -63,6 +78,7 @@ def calendario(request):
         'next_fecha': fecha + timedelta(days=1) if fecha < hoy + timedelta(days=urb.antelacion_maxima_dias) else None,
         'calendario': calendario_data,
         'urb': urb,
+        'urbanizaciones': urbanizaciones,
     }
     return render(request, 'reservas/calendario.html', context)
 
@@ -80,7 +96,10 @@ def crear_reserva(request):
         hora_inicio_str = request.POST.get('hora_inicio')
 
         try:
-            pista = Pista.objects.get(pk=pista_id, urbanizacion=usuario.urbanizacion)
+            if usuario.rol == usuario.ROL_SUPERADMIN:
+                pista = Pista.objects.get(pk=pista_id)
+            else:
+                pista = Pista.objects.get(pk=pista_id, urbanizacion=usuario.urbanizacion)
             fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
             hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M:%S').time()
         except Exception:

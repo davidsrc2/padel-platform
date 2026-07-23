@@ -6,6 +6,11 @@
   <h1 class="text-2xl font-bold text-green-700 mb-6 text-center">Acceder</h1>
   <form method="post" class="space-y-4">
     {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="bg-red-100 text-red-800 text-sm rounded-lg px-4 py-3">
+        {{ form.non_field_errors|join:", " }}
+      </div>
+    {% endif %}
     {% for field in form %}
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
