@@ -1,57 +1,71 @@
 import logging
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
 
-def _enviar(reserva, asunto, cuerpo):
+def _enviar(reserva, asunto, estado_label, color, intro):
     if not reserva.usuario.email:
         logger.warning(
             'No se envía email de reserva: el usuario "%s" no tiene email.',
             reserva.usuario.username,
         )
         return
+
+    nombre = reserva.usuario.get_full_name() or reserva.usuario.username
+    contexto = {
+        'asunto': asunto,
+        'estado_label': estado_label,
+        'color': color,
+        'intro': intro,
+        'nombre': nombre,
+        'pista': reserva.pista.nombre,
+        'fecha': reserva.fecha.strftime('%d/%m/%Y'),
+        'hora_inicio': reserva.hora_inicio.strftime('%H:%M'),
+        'hora_fin': reserva.hora_fin.strftime('%H:%M'),
+        'urbanizacion': reserva.urbanizacion.nombre,
+    }
+    html = render_to_string('emails/reserva.html', contexto)
+    texto = (
+        f'Hola {nombre},\n\n{intro}\n\n'
+        f'Pista: {contexto["pista"]}\n'
+        f'Fecha: {contexto["fecha"]}\n'
+        f'Hora: {contexto["hora_inicio"]}–{contexto["hora_fin"]}\n'
+        f'Urbanización: {contexto["urbanizacion"]}'
+    )
+
     try:
-        send_mail(
+        email = EmailMultiAlternatives(
             subject=f'[Pádel] {asunto}',
-            message=cuerpo,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[reserva.usuario.email],
-            fail_silently=False,
+            body=texto,
+            from_email=f'Pádel <{settings.DEFAULT_FROM_EMAIL}>',
+            to=[reserva.usuario.email],
         )
+        email.attach_alternative(html, 'text/html')
+        email.send(fail_silently=False)
         logger.info('Email "%s" enviado a %s', asunto, reserva.usuario.email)
     except Exception:
         logger.exception('Fallo enviando email de reserva a %s', reserva.usuario.email)
 
 
 def enviar_confirmacion_reserva(reserva):
-    nombre = reserva.usuario.get_full_name() or reserva.usuario.username
     _enviar(
         reserva,
         asunto='Reserva confirmada',
-        cuerpo=(
-            f'Hola {nombre},\n\n'
-            f'Tu reserva ha sido confirmada:\n'
-            f'Pista: {reserva.pista.nombre}\n'
-            f'Fecha: {reserva.fecha.strftime("%d/%m/%Y")}\n'
-            f'Hora: {reserva.hora_inicio.strftime("%H:%M")}–{reserva.hora_fin.strftime("%H:%M")}\n'
-            f'Urbanización: {reserva.urbanizacion.nombre}'
-        ),
+        estado_label='Confirmada',
+        color='#10b981',
+        intro='Tu reserva ha sido confirmada. Aquí tienes los detalles:',
     )
 
 
 def enviar_cancelacion_reserva(reserva):
-    nombre = reserva.usuario.get_full_name() or reserva.usuario.username
     _enviar(
         reserva,
         asunto='Reserva cancelada',
-        cuerpo=(
-            f'Hola {nombre},\n\n'
-            f'Tu reserva ha sido cancelada:\n'
-            f'Pista: {reserva.pista.nombre}\n'
-            f'Fecha: {reserva.fecha.strftime("%d/%m/%Y")}\n'
-            f'Hora: {reserva.hora_inicio.strftime("%H:%M")}–{reserva.hora_fin.strftime("%H:%M")}'
-        ),
+        estado_label='Cancelada',
+        color='#ef4444',
+        intro='Tu reserva ha sido cancelada. Estos eran sus detalles:',
     )
