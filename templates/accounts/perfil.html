@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Mi perfil — Pádel{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-bold text-slate-100 mb-6">Mi perfil</h1>
+
+<div class="max-w-lg glass rounded-2xl shadow-glow p-8">
+  <div class="flex items-center gap-4 mb-6 pb-6 border-b border-white/10">
+    <div class="w-14 h-14 shrink-0 rounded-full bg-gradient-to-br from-cyan-500 to-violet-500 grid place-items-center text-xl font-bold text-slate-950">
+      {{ usuario.get_full_name|default:usuario.username|first|upper }}
+    </div>
+    <div>
+      <p class="text-lg font-semibold text-slate-100">{{ usuario.get_full_name|default:usuario.username }}</p>
+      <p class="text-sm text-slate-400">{{ usuario.get_rol_display }}</p>
+    </div>
+  </div>
+
+  <dl class="divide-y divide-white/10 text-sm">
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Usuario</dt>
+      <dd class="text-slate-100 font-medium">{{ usuario.username }}</dd>
+    </div>
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Email</dt>
+      <dd class="text-slate-100 font-medium">{{ usuario.email|default:"—" }}</dd>
+    </div>
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Teléfono</dt>
+      <dd class="text-slate-100 font-medium">{{ usuario.telefono|default:"—" }}</dd>
+    </div>
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Vivienda</dt>
+      <dd class="text-slate-100 font-medium">{{ usuario.vivienda|default:"—" }}</dd>
+    </div>
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Urbanización</dt>
+      <dd class="text-slate-100 font-medium">{{ usuario.urbanizacion.nombre|default:"—" }}</dd>
+    </div>
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Estado</dt>
+      <dd>
+        {% if usuario.aprobado %}
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300">Aprobado</span>
+        {% else %}
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300">Pendiente</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="flex items-center justify-between py-3">
+      <dt class="text-slate-400">Miembro desde</dt>
+      <dd class="text-slate-100 font-medium">{{ usuario.date_joined|date:"d/m/Y" }}</dd>
+    </div>
+  </dl>
+
+  <a href="{% url 'accounts:password_reset' %}"
+    class="mt-6 inline-block text-cyan-400 hover:underline text-sm">
+    Cambiar contraseña
+  </a>
+</div>
+{% endblock %}

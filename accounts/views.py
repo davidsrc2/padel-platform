@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import RegistroForm
 from viviendas.models import Portal, Vivienda
@@ -15,6 +16,11 @@ def registro(request):
     else:
         form = RegistroForm()
     return render(request, 'accounts/registro.html', {'form': form})
+
+
+@login_required
+def perfil(request):
+    return render(request, 'accounts/perfil.html', {'usuario': request.user})
 
 
 def portales_ajax(request):
