@@ -23,12 +23,11 @@ class Command(BaseCommand):
             )
             return
 
-        usuario, creado = Usuario.objects.get_or_create(
-            username=username,
-            defaults={'email': email},
-        )
+        usuario, creado = Usuario.objects.get_or_create(username=username)
         if creado:
             usuario.set_password(password)
+        if email:
+            usuario.email = email
         usuario.is_staff = True
         usuario.is_superuser = True
         usuario.is_active = True

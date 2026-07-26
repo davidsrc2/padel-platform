@@ -8,6 +8,10 @@ logger = logging.getLogger(__name__)
 
 def _enviar(reserva, asunto, cuerpo):
     if not reserva.usuario.email:
+        logger.warning(
+            'No se envía email de reserva: el usuario "%s" no tiene email.',
+            reserva.usuario.username,
+        )
         return
     try:
         send_mail(
