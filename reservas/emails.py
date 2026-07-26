@@ -21,6 +21,7 @@ def _enviar(reserva, asunto, cuerpo):
             recipient_list=[reserva.usuario.email],
             fail_silently=False,
         )
+        logger.info('Email "%s" enviado a %s', asunto, reserva.usuario.email)
     except Exception:
         logger.exception('Fallo enviando email de reserva a %s', reserva.usuario.email)
 
