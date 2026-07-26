@@ -56,10 +56,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'padel_platform'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'NAME': os.environ.get('DB_NAME', 'padel_oyj2'),
+        'USER': os.environ.get('DB_USER', 'padel_oyj2_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'GVJkACEUuckeSWxfvZ6kqduQ3u93JQvG'),
+        'HOST': os.environ.get('DB_HOST', 'dpg-d9j3fhr7uimc73cea2jg-a'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
