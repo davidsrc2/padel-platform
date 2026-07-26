@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'anymail',
     # apps del proyecto
     'accounts',
     'urbanizaciones',
@@ -100,5 +101,11 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 10))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@padel-urbanizacion.local')
+
+# Backend alternativo por API HTTPS (Resend), para hosts que bloquean SMTP saliente.
+# Activarlo con EMAIL_BACKEND=anymail.backends.resend.EmailBackend
+ANYMAIL = {
+    'RESEND_API_KEY': os.environ.get('RESEND_API_KEY', ''),
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
