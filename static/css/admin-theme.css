@@ -1,37 +1,38 @@
 :root,
 html[data-theme="light"],
 html[data-theme="dark"] {
-    --primary: #15803d;
-    --secondary: #166534;
-    --accent: #16a34a;
+    --primary: #7c3aed;
+    --secondary: #4c1d95;
+    --accent: #06b6d4;
     --primary-fg: #fff;
 
-    --header-color: #ecfdf5;
-    --header-branding-color: #ecfdf5;
-    --header-bg: #14532d;
+    --header-color: #ecfeff;
+    --header-branding-color: #ecfeff;
+    --header-bg: #1e1b4b;
     --header-link-color: #fff;
 
-    --breadcrumbs-fg: #dcfce7;
+    --breadcrumbs-fg: #ede9fe;
     --breadcrumbs-link-fg: #fff;
-    --breadcrumbs-bg: #166534;
+    --breadcrumbs-bg: #4c1d95;
 
-    --link-fg: #15803d;
-    --link-hover-color: #14532d;
-    --link-selected-fg: #166534;
+    --link-fg: #7c3aed;
+    --link-hover-color: #4c1d95;
+    --link-selected-fg: #6d28d9;
 
-    --button-bg: #15803d;
-    --button-hover-bg: #14532d;
-    --default-button-bg: #15803d;
-    --default-button-hover-bg: #14532d;
+    --button-bg: #7c3aed;
+    --button-hover-bg: #6d28d9;
+    --default-button-bg: #7c3aed;
+    --default-button-hover-bg: #6d28d9;
 
-    --object-tools-bg: #16a34a;
-    --object-tools-hover-bg: #15803d;
+    --object-tools-bg: #06b6d4;
+    --object-tools-hover-bg: #0891b2;
 
-    --body-bg: #f9fafb;
-    --font-family-primary: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    --body-bg: #f8fafc;
+    --font-family-primary: "Space Grotesk", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
 }
 
 #header {
+    background: linear-gradient(135deg, #1e1b4b, #4c1d95) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
 }
 

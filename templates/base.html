@@ -4,39 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Pádel Urbanización{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Space Grotesk', 'sans-serif'] },
+          boxShadow: {
+            glow: '0 0 40px -12px rgba(34,211,238,0.45)',
+            glowLg: '0 0 70px -15px rgba(139,92,246,0.55)',
+          },
+        }
+      }
+    }
+  </script>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen text-slate-100 antialiased">
 
-  <nav class="bg-green-700 text-white px-6 py-3 flex items-center justify-between shadow">
-    <a href="{% url 'reservas:calendario' %}" class="font-bold text-lg tracking-wide">Pádel</a>
-    <div class="flex gap-4 text-sm">
+  <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/[0.04] border-b border-white/10 px-6 py-4 flex items-center justify-between">
+    <a href="{% url 'reservas:calendario' %}" class="font-bold text-lg tracking-wide bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+      ⚡ Pádel
+    </a>
+    <div class="flex items-center gap-5 text-sm font-medium text-slate-300">
       {% if user.is_authenticated %}
-        <a href="{% url 'reservas:calendario' %}" class="hover:underline">Calendario</a>
-        <a href="{% url 'reservas:mis_reservas' %}" class="hover:underline">Mis reservas</a>
+        <a href="{% url 'reservas:calendario' %}" class="hover:text-cyan-300 transition-colors">Calendario</a>
+        <a href="{% url 'reservas:mis_reservas' %}" class="hover:text-cyan-300 transition-colors">Mis reservas</a>
         {% if user.is_staff %}
-          <a href="{% url 'admin:index' %}" class="hover:underline">Admin</a>
+          <a href="{% url 'admin:index' %}" class="hover:text-cyan-300 transition-colors">Admin</a>
         {% endif %}
         <form method="post" action="{% url 'accounts:logout' %}" class="inline">
           {% csrf_token %}
-          <button type="submit" class="hover:underline">Salir</button>
+          <button type="submit" class="hover:text-red-400 transition-colors">Salir</button>
         </form>
       {% else %}
-        <a href="{% url 'accounts:login' %}" class="hover:underline">Entrar</a>
-        <a href="{% url 'accounts:registro' %}" class="hover:underline">Registrarse</a>
+        <a href="{% url 'accounts:login' %}" class="hover:text-cyan-300 transition-colors">Entrar</a>
+        <a href="{% url 'accounts:registro' %}"
+          class="rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 px-4 py-1.5 text-slate-950 font-semibold shadow-glow hover:shadow-glowLg transition-shadow">
+          Registrarse
+        </a>
       {% endif %}
     </div>
   </nav>
 
-  <main class="max-w-4xl mx-auto px-4 py-8">
+  <main class="max-w-4xl mx-auto px-4 py-10">
     {% if messages %}
       <div class="mb-6 space-y-2">
         {% for msg in messages %}
-          <div class="px-4 py-3 rounded text-sm
-            {% if msg.tags == 'error' %}bg-red-100 text-red-800
-            {% elif msg.tags == 'success' %}bg-green-100 text-green-800
-            {% else %}bg-blue-100 text-blue-800{% endif %}">
+          <div class="glass rounded-xl px-4 py-3 text-sm border-l-4
+            {% if msg.tags == 'error' %}border-l-red-500 text-red-200
+            {% elif msg.tags == 'success' %}border-l-emerald-400 text-emerald-200
+            {% else %}border-l-cyan-400 text-cyan-200{% endif %}">
             {{ msg }}
           </div>
         {% endfor %}

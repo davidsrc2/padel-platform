@@ -2,9 +2,11 @@
 {% block title %}Registro — Pádel{% endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto mt-8 bg-white rounded-xl shadow p-8">
-  <h1 class="text-2xl font-bold text-green-700 mb-6 text-center">Crear cuenta</h1>
-  <p class="text-sm text-gray-500 mb-6 text-center">
+<div class="max-w-lg mx-auto mt-8 glass rounded-2xl shadow-glow p-8">
+  <h1 class="text-2xl font-bold mb-1 text-center bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+    Crear cuenta
+  </h1>
+  <p class="text-sm text-slate-400 mb-6 text-center">
     Tu cuenta será revisada por el administrador antes de poder reservar.
   </p>
 
@@ -12,28 +14,22 @@
     {% csrf_token %}
     {% for field in form %}
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+        <label class="block text-sm font-medium text-slate-300 mb-1">{{ field.label }}</label>
         {{ field }}
         {% if field.errors %}
-          <p class="text-red-600 text-xs mt-1">{{ field.errors|join:", " }}</p>
+          <p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>
         {% endif %}
       </div>
     {% endfor %}
-    <button type="submit" class="w-full bg-green-700 text-white py-2 rounded-lg font-semibold hover:bg-green-800 mt-2">
+    <button type="submit"
+      class="w-full bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 py-2.5 rounded-lg font-semibold hover:shadow-glowLg transition-shadow mt-2">
       Solicitar registro
     </button>
   </form>
-  <p class="text-center text-sm text-gray-500 mt-4">
-    ¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}" class="text-green-700 hover:underline">Accede aquí</a>
+  <p class="text-center text-sm text-slate-400 mt-4">
+    ¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}" class="text-cyan-400 hover:underline">Accede aquí</a>
   </p>
 </div>
-
-<style>
-  select, input[type=text], input[type=email], input[type=password] {
-    width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db;
-    border-radius: 0.5rem; font-size: 0.875rem;
-  }
-</style>
 
 <script>
   const urbSelect = document.getElementById('id_urbanizacion');
@@ -52,6 +48,9 @@
         data.portales.forEach(p => {
           portalSelect.innerHTML += `<option value="${p.id}">Portal ${p.nombre}</option>`;
         });
+      })
+      .catch(() => {
+        portalSelect.innerHTML = '<option value="">Error de conexión, reintenta</option>';
       });
   });
 
@@ -66,6 +65,9 @@
         data.viviendas.forEach(v => {
           viviendaSelect.innerHTML += `<option value="${v.id}">${v.label}</option>`;
         });
+      })
+      .catch(() => {
+        viviendaSelect.innerHTML = '<option value="">Error de conexión, reintenta</option>';
       });
   });
 </script>

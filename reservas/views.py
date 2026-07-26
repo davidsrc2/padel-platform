@@ -1,11 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta, datetime
 
 from .models import Reserva
 from .forms import ReservaForm
+from .emails import enviar_confirmacion_reserva, enviar_cancelacion_reserva
 from pistas.models import Pista
 from urbanizaciones.models import Urbanizacion
 
@@ -91,32 +93,25 @@ def crear_reserva(request):
         return redirect('reservas:calendario')
 
     if request.method == 'POST':
-        pista_id = request.POST.get('pista')
-        fecha_str = request.POST.get('fecha')
-        hora_inicio_str = request.POST.get('hora_inicio')
+        form = ReservaForm(request.POST, usuario=usuario)
+        if usuario.rol == usuario.ROL_SUPERADMIN:
+            form.fields['pista'].queryset = Pista.objects.all()
 
-        try:
-            if usuario.rol == usuario.ROL_SUPERADMIN:
-                pista = Pista.objects.get(pk=pista_id)
-            else:
-                pista = Pista.objects.get(pk=pista_id, urbanizacion=usuario.urbanizacion)
-            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-            hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M:%S').time()
-        except Exception:
-            messages.error(request, 'Datos de reserva incorrectos.')
-            return redirect('reservas:calendario')
-
-        urb = pista.urbanizacion
-        duracion = timedelta(minutes=urb.duracion_franja_minutos)
-        hora_fin = (datetime.combine(fecha, hora_inicio) + duracion).time()
-
-        reserva = Reserva(pista=pista, usuario=usuario, fecha=fecha, hora_inicio=hora_inicio, hora_fin=hora_fin)
-        try:
-            reserva.full_clean()
-            reserva.save()
-            messages.success(request, f'Reserva confirmada: {fecha} {hora_inicio.strftime("%H:%M")}–{hora_fin.strftime("%H:%M")}.')
-        except Exception as e:
-            messages.error(request, str(e))
+        if form.is_valid():
+            try:
+                reserva = form.save()
+                messages.success(
+                    request,
+                    f'Reserva confirmada: {reserva.fecha} '
+                    f'{reserva.hora_inicio.strftime("%H:%M")}–{reserva.hora_fin.strftime("%H:%M")}.'
+                )
+                enviar_confirmacion_reserva(reserva)
+            except ValidationError as e:
+                messages.error(request, ' '.join(e.messages))
+        else:
+            for errores in form.errors.values():
+                for error in errores:
+                    messages.error(request, error)
 
     return redirect('reservas:calendario')
 
@@ -145,5 +140,6 @@ def cancelar_reserva(request, pk):
     if request.method == 'POST':
         reserva.estado = Reserva.ESTADO_CANCELADA
         reserva.save()
+        enviar_cancelacion_reserva(reserva)
         messages.success(request, 'Reserva cancelada.')
     return redirect('reservas:mis_reservas')

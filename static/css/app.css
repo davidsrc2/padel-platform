@@ -1,0 +1,59 @@
+body {
+  background:
+    radial-gradient(circle at 12% -5%, rgba(34, 211, 238, 0.16), transparent 42%),
+    radial-gradient(circle at 88% 12%, rgba(139, 92, 246, 0.18), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(34, 211, 238, 0.08), transparent 50%),
+    #05070d;
+  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Django renderiza los widgets de formulario sin clases propias:
+   estos selectores de tag son el único gancho de estilo disponible
+   sin tocar cada Form/widget. */
+input[type=text],
+input[type=password],
+input[type=email],
+input[type=date],
+select {
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.6rem;
+  font-size: 0.875rem;
+  color: #e2e8f0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(34, 211, 238, 0.65);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+select option {
+  background-color: #0b0f1a;
+  color: #e2e8f0;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}

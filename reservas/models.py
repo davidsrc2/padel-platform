@@ -80,6 +80,10 @@ class Reserva(models.Model):
                     f'Tu vivienda ya tiene el máximo de {urb.max_reservas_por_vivienda} reserva(s) activa(s).'
                 )
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def puede_cancelar(self):
         urb = self.urbanizacion
         ahora = timezone.localtime()
