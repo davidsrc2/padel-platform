@@ -102,10 +102,12 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 10))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@padel-urbanizacion.local')
 
-# Backend alternativo por API HTTPS (Resend), para hosts que bloquean SMTP saliente.
-# Activarlo con EMAIL_BACKEND=anymail.backends.resend.EmailBackend
+# Backends alternativos por API HTTPS, para hosts que bloquean SMTP saliente.
+# Resend: EMAIL_BACKEND=anymail.backends.resend.EmailBackend (solo entrega a tu propio email sin dominio verificado)
+# Brevo:  EMAIL_BACKEND=anymail.backends.brevo.EmailBackend (entrega a cualquier destinatario, solo pide verificar tu email remitente)
 ANYMAIL = {
     'RESEND_API_KEY': os.environ.get('RESEND_API_KEY', ''),
+    'BREVO_API_KEY': os.environ.get('BREVO_API_KEY', ''),
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
