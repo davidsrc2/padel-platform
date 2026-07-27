@@ -115,6 +115,20 @@ ANYMAIL = {
     'BREVO_API_KEY': os.environ.get('BREVO_API_KEY', ''),
 }
 
+# Render (y la mayoría de PaaS) terminan el HTTPS en su proxy y reenvían a
+# la app por HTTP interno. Sin esto, request.is_secure() siempre da False
+# aunque el visitante esté en https://, rompiendo cookies seguras y redirects.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Todas por defecto en False/0 para no romper el desarrollo local (http://).
+# En producción, activarlas por variable de entorno.
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False') == 'True'
+SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', 0))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGGING = {
