@@ -1,0 +1,4 @@
+<div id="reserva-{{ r.pk }}" class="glass rounded-xl p-4 flex items-center justify-between text-sm">
+  <span class="text-slate-400">{{ r.pista.nombre }} · {{ r.fecha }} {{ r.hora_inicio|time:"H:i" }}</span>
+  <span class="text-red-400">Cancelada</span>
+</div>

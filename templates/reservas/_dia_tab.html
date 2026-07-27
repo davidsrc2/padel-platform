@@ -1,0 +1,12 @@
+<a id="dia-{{ dia.fecha|date:'Ymd' }}" {% if oob %}hx-swap-oob="true"{% endif %}
+  href="?fecha={{ dia.fecha|date:'Y-m-d' }}{% if mostrar_urb_param %}&urbanizacion={{ urb_pk }}{% endif %}"
+  class="flex flex-col items-center justify-center min-w-[64px] px-3 py-2 rounded-xl transition-colors shrink-0
+  {% if dia.fecha == fecha_actual %}bg-gradient-to-br from-cyan-500 to-violet-500 text-slate-950{% else %}glass text-slate-300 hover:border-cyan-400/40{% endif %}">
+  <span class="text-[10px] uppercase tracking-wide {% if dia.fecha == fecha_actual %}text-slate-900/70{% else %}text-slate-500{% endif %}">
+    {{ dia.fecha|date:"D" }}
+  </span>
+  <span class="text-lg font-bold leading-tight">{{ dia.fecha|date:"j" }}</span>
+  <span class="text-[10px] {% if dia.libres > 0 %}{% if dia.fecha == fecha_actual %}text-slate-900/70{% else %}text-emerald-300{% endif %}{% else %}{% if dia.fecha == fecha_actual %}text-slate-900/50{% else %}text-slate-600{% endif %}{% endif %}">
+    {% if dia.libres > 0 %}{{ dia.libres }} libre{{ dia.libres|pluralize }}{% else %}sin hueco{% endif %}
+  </span>
+</a>

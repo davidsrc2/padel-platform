@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils import timezone
 from datetime import timedelta, datetime
 
@@ -48,19 +50,22 @@ def _franjas_disponibles(pista, fecha):
     return franjas
 
 
+def _libres_dia(pistas, dia):
+    return sum(
+        1
+        for pista in pistas
+        for franja in _franjas_disponibles(pista, dia)
+        if not franja['ocupada'] and not franja['bloqueada'] and not franja['pasada']
+    )
+
+
 def _resumen_semana(pistas, hoy, max_fecha):
     """Cuenta franjas libres por día, para el selector de semana del calendario."""
     dias = (max_fecha - hoy).days + 1
     resumen = []
     for i in range(min(dias, 7)):
         dia = hoy + timedelta(days=i)
-        libres = sum(
-            1
-            for pista in pistas
-            for franja in _franjas_disponibles(pista, dia)
-            if not franja['ocupada'] and not franja['bloqueada'] and not franja['pasada']
-        )
-        resumen.append({'fecha': dia, 'libres': libres})
+        resumen.append({'fecha': dia, 'libres': _libres_dia(pistas, dia)})
     return resumen
 
 
@@ -111,11 +116,44 @@ def calendario(request):
     return render(request, 'reservas/calendario.html', context)
 
 
+def _respuesta_franja_htmx(request, usuario, pista_id, fecha, hora_inicio, error=None):
+    """Recalcula el estado real de una franja y la de su día en la tira semanal,
+    y devuelve ambos parciales (el segundo como out-of-band swap) para htmx."""
+    pista = get_object_or_404(Pista, pk=pista_id)
+    franjas = _franjas_disponibles(pista, fecha)
+    franja = next((f for f in franjas if f['hora_inicio'] == hora_inicio), None)
+    if franja and error and not franja['ocupada'] and not franja['bloqueada']:
+        franja['error'] = error
+
+    html = render_to_string('reservas/_franja.html', {
+        'pista': pista, 'fecha': fecha, 'franja': franja,
+    }, request=request)
+
+    urb = pista.urbanizacion
+    if usuario.rol != usuario.ROL_SUPERADMIN or usuario.urbanizacion:
+        pistas_urb = list(urb.pistas.filter(activa=True))
+        libres = _libres_dia(pistas_urb, fecha)
+        html += render_to_string('reservas/_dia_tab.html', {
+            'dia': {'fecha': fecha, 'libres': libres},
+            'fecha_actual': fecha,
+            'urb_pk': urb.pk,
+            'mostrar_urb_param': usuario.rol == usuario.ROL_SUPERADMIN,
+            'oob': True,
+        }, request=request)
+
+    return HttpResponse(html)
+
+
 @login_required
 def crear_reserva(request):
     usuario = request.user
+    es_htmx = request.headers.get('HX-Request') == 'true'
+
     if not usuario.aprobado:
-        messages.error(request, 'Tu cuenta no ha sido aprobada aún.')
+        # No debería poder llegar aquí desde la UI (el calendario ni se
+        # renderiza sin aprobación), pero por si llega una petición directa.
+        if not es_htmx:
+            messages.error(request, 'Tu cuenta no ha sido aprobada aún.')
         return redirect('reservas:calendario')
 
     if request.method == 'POST':
@@ -123,21 +161,36 @@ def crear_reserva(request):
         if usuario.rol == usuario.ROL_SUPERADMIN:
             form.fields['pista'].queryset = Pista.objects.all()
 
+        error = None
+        reserva = None
         if form.is_valid():
             try:
                 reserva = form.save()
-                messages.success(
-                    request,
-                    f'Reserva confirmada: {reserva.fecha} '
-                    f'{reserva.hora_inicio.strftime("%H:%M")}–{reserva.hora_fin.strftime("%H:%M")}.'
-                )
                 enviar_confirmacion_reserva(reserva)
             except ValidationError as e:
-                messages.error(request, ' '.join(e.messages))
+                error = ' '.join(e.messages)
         else:
-            for errores in form.errors.values():
-                for error in errores:
-                    messages.error(request, error)
+            error = ' '.join(err for errores in form.errors.values() for err in errores)
+
+        if es_htmx:
+            pista_id = request.POST.get('pista')
+            fecha_str = request.POST.get('fecha')
+            hora_inicio_str = request.POST.get('hora_inicio')
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M:%S').time()
+            except (TypeError, ValueError):
+                return redirect('reservas:calendario')
+            return _respuesta_franja_htmx(request, usuario, pista_id, fecha, hora_inicio, error=error)
+
+        if reserva:
+            messages.success(
+                request,
+                f'Reserva confirmada: {reserva.fecha} '
+                f'{reserva.hora_inicio.strftime("%H:%M")}–{reserva.hora_fin.strftime("%H:%M")}.'
+            )
+        elif error:
+            messages.error(request, error)
 
     return redirect('reservas:calendario')
 
@@ -160,13 +213,21 @@ def mis_reservas(request):
 @login_required
 def cancelar_reserva(request, pk):
     reserva = get_object_or_404(Reserva, pk=pk, usuario=request.user, estado=Reserva.ESTADO_CONFIRMADA)
+    es_htmx = request.headers.get('HX-Request') == 'true'
+
     if not reserva.puede_cancelar():
-        messages.error(request, f'No puedes cancelar con menos de {reserva.urbanizacion.cancelacion_minima_horas}h de antelación.')
+        mensaje = f'No puedes cancelar con menos de {reserva.urbanizacion.cancelacion_minima_horas}h de antelación.'
+        if es_htmx:
+            return render(request, 'reservas/_reserva_proxima.html', {'r': reserva, 'error': mensaje})
+        messages.error(request, mensaje)
         return redirect('reservas:mis_reservas')
+
     if request.method == 'POST':
         reserva.estado = Reserva.ESTADO_CANCELADA
         reserva.save()
         enviar_cancelacion_reserva(reserva)
+        if es_htmx:
+            return render(request, 'reservas/_reserva_cancelada.html', {'r': reserva})
         messages.success(request, 'Reserva cancelada.')
     return redirect('reservas:mis_reservas')
 
@@ -177,8 +238,14 @@ def editar_companeros(request, pk):
         Reserva, pk=pk, usuario=request.user, estado=Reserva.ESTADO_CONFIRMADA,
         fecha__gte=timezone.localdate(),
     )
+    es_htmx = request.headers.get('HX-Request') == 'true'
+
     if request.method == 'POST':
         reserva.companeros = request.POST.get('companeros', '').strip()[:200]
         reserva.save(update_fields=['companeros'])
-        messages.success(request, 'Actualizado.')
+        if not es_htmx:
+            messages.success(request, 'Actualizado.')
+
+    if es_htmx:
+        return render(request, 'reservas/_reserva_proxima.html', {'r': reserva})
     return redirect('reservas:mis_reservas')
