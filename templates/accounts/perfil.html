@@ -15,18 +15,32 @@
     </div>
   </div>
 
-  <dl class="divide-y divide-white/10 text-sm">
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-lg px-4 py-3">
+        {{ form.non_field_errors|join:", " }}
+      </div>
+    {% endif %}
+    {% for field in form %}
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit"
+      class="w-full bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 py-2.5 rounded-lg font-semibold hover:shadow-glowLg transition-shadow">
+      Guardar cambios
+    </button>
+  </form>
+
+  <dl class="divide-y divide-white/10 text-sm mt-6 pt-2 border-t border-white/10">
     <div class="flex items-center justify-between py-3">
       <dt class="text-slate-400">Usuario</dt>
       <dd class="text-slate-100 font-medium">{{ usuario.username }}</dd>
-    </div>
-    <div class="flex items-center justify-between py-3">
-      <dt class="text-slate-400">Email</dt>
-      <dd class="text-slate-100 font-medium">{{ usuario.email|default:"—" }}</dd>
-    </div>
-    <div class="flex items-center justify-between py-3">
-      <dt class="text-slate-400">Teléfono</dt>
-      <dd class="text-slate-100 font-medium">{{ usuario.telefono|default:"—" }}</dd>
     </div>
     <div class="flex items-center justify-between py-3">
       <dt class="text-slate-400">Vivienda</dt>

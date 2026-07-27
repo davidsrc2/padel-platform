@@ -48,3 +48,21 @@ class PerfilTest(TestCase):
         self.client.force_login(usuario)
         resp = self.client.get('/accounts/perfil/')
         self.assertContains(resp, 'vecino1@example.com')
+
+    def test_perfil_permite_editar_datos_propios(self):
+        urb = Urbanizacion.objects.create(nombre='Test', direccion='x')
+        portal = Portal.objects.create(urbanizacion=urb, nombre='A')
+        vivienda = Vivienda.objects.create(portal=portal, piso='1')
+        usuario = Usuario.objects.create_user(
+            username='vecino1', password='pass', vivienda=vivienda, aprobado=True,
+            email='viejo@example.com',
+        )
+        self.client.force_login(usuario)
+        resp = self.client.post('/accounts/perfil/', {
+            'first_name': 'Nuevo', 'last_name': 'Nombre',
+            'email': 'nuevo@example.com', 'telefono': '600111222',
+        })
+        self.assertEqual(resp.status_code, 302)
+        usuario.refresh_from_db()
+        self.assertEqual(usuario.email, 'nuevo@example.com')
+        self.assertEqual(usuario.telefono, '600111222')

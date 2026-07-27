@@ -5,6 +5,18 @@ from viviendas.models import Vivienda, Portal
 from urbanizaciones.models import Urbanizacion
 
 
+class PerfilForm(forms.ModelForm):
+    class Meta:
+        model = Usuario
+        fields = ['first_name', 'last_name', 'email', 'telefono']
+        labels = {
+            'first_name': 'Nombre',
+            'last_name': 'Apellidos',
+            'email': 'Email',
+            'telefono': 'Teléfono',
+        }
+
+
 class RegistroForm(UserCreationForm):
     first_name = forms.CharField(label='Nombre', max_length=150, required=True)
     last_name = forms.CharField(label='Apellidos', max_length=150, required=True)

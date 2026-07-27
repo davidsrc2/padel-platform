@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
 from .emails import enviar_aprobacion_usuario
-from .forms import RegistroForm
+from .forms import PerfilForm, RegistroForm
 from .models import Usuario
 from viviendas.models import Portal, Vivienda
 
@@ -23,7 +23,15 @@ def registro(request):
 
 @login_required
 def perfil(request):
-    return render(request, 'accounts/perfil.html', {'usuario': request.user})
+    if request.method == 'POST':
+        form = PerfilForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Perfil actualizado.')
+            return redirect('accounts:perfil')
+    else:
+        form = PerfilForm(instance=request.user)
+    return render(request, 'accounts/perfil.html', {'usuario': request.user, 'form': form})
 
 
 @panel_required
