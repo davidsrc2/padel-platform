@@ -2,8 +2,24 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}Pádel Urbanización{% endblock %}</title>
+
+  {% load static %}
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#05070d">
+
+  <!-- Android/Chrome: instalar como app -->
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- iOS: instalar como app a pantalla completa, sin barra de Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pádel">
+
+  <link rel="icon" href="{% static 'icons/icon-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -22,12 +38,22 @@
       }
     }
   </script>
-  {% load static %}
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('{% url "sw" %}', { scope: '/' });
+      });
+    }
+  </script>
 </head>
 <body class="min-h-screen text-slate-100 antialiased">
 
-  <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/[0.04] border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
+  <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/[0.04] border-b border-white/10
+    pb-3 sm:pb-4
+    pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-[max(1rem,env(safe-area-inset-top))]
+    pl-[max(1rem,env(safe-area-inset-left))] sm:pl-[max(1.5rem,env(safe-area-inset-left))]
+    pr-[max(1rem,env(safe-area-inset-right))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <a href="{% url 'reservas:calendario' %}" class="font-bold text-lg tracking-wide bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
         ⚡ Pádel
@@ -55,7 +81,10 @@
     </div>
   </nav>
 
-  <main class="max-w-4xl mx-auto px-4 py-8 sm:py-10">
+  <main class="max-w-4xl mx-auto py-8 sm:py-10
+    pl-[max(1rem,env(safe-area-inset-left))]
+    pr-[max(1rem,env(safe-area-inset-right))]
+    pb-[env(safe-area-inset-bottom)]">
     {% if messages %}
       <div class="mb-6 space-y-2">
         {% for msg in messages %}
