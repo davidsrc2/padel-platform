@@ -27,33 +27,35 @@
 </head>
 <body class="min-h-screen text-slate-100 antialiased">
 
-  <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/[0.04] border-b border-white/10 px-6 py-4 flex items-center justify-between">
-    <a href="{% url 'reservas:calendario' %}" class="font-bold text-lg tracking-wide bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
-      ⚡ Pádel
-    </a>
-    <div class="flex items-center gap-5 text-sm font-medium text-slate-300">
-      {% if user.is_authenticated %}
-        <a href="{% url 'reservas:calendario' %}" class="hover:text-cyan-300 transition-colors">Calendario</a>
-        <a href="{% url 'reservas:mis_reservas' %}" class="hover:text-cyan-300 transition-colors">Mis reservas</a>
-        <a href="{% url 'accounts:perfil' %}" class="hover:text-cyan-300 transition-colors">Perfil</a>
-        {% if user.is_staff %}
-          <a href="{% url 'admin:index' %}" class="hover:text-cyan-300 transition-colors">Admin</a>
+  <nav class="sticky top-0 z-50 backdrop-blur-xl bg-white/[0.04] border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <a href="{% url 'reservas:calendario' %}" class="font-bold text-lg tracking-wide bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
+        ⚡ Pádel
+      </a>
+      <div class="flex items-center flex-wrap gap-x-4 gap-y-2 sm:gap-5 text-sm font-medium text-slate-300">
+        {% if user.is_authenticated %}
+          <a href="{% url 'reservas:calendario' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Calendario</a>
+          <a href="{% url 'reservas:mis_reservas' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Mis reservas</a>
+          <a href="{% url 'accounts:perfil' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Perfil</a>
+          {% if user.is_staff %}
+            <a href="{% url 'admin:index' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Admin</a>
+          {% endif %}
+          <form method="post" action="{% url 'accounts:logout' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="whitespace-nowrap hover:text-red-400 transition-colors">Salir</button>
+          </form>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Entrar</a>
+          <a href="{% url 'accounts:registro' %}"
+            class="whitespace-nowrap rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 px-4 py-1.5 text-slate-950 font-semibold shadow-glow hover:shadow-glowLg transition-shadow">
+            Registrarse
+          </a>
         {% endif %}
-        <form method="post" action="{% url 'accounts:logout' %}" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="hover:text-red-400 transition-colors">Salir</button>
-        </form>
-      {% else %}
-        <a href="{% url 'accounts:login' %}" class="hover:text-cyan-300 transition-colors">Entrar</a>
-        <a href="{% url 'accounts:registro' %}"
-          class="rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 px-4 py-1.5 text-slate-950 font-semibold shadow-glow hover:shadow-glowLg transition-shadow">
-          Registrarse
-        </a>
-      {% endif %}
+      </div>
     </div>
   </nav>
 
-  <main class="max-w-4xl mx-auto px-4 py-10">
+  <main class="max-w-4xl mx-auto px-4 py-8 sm:py-10">
     {% if messages %}
       <div class="mb-6 space-y-2">
         {% for msg in messages %}
