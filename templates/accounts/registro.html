@@ -29,6 +29,10 @@
   <p class="text-center text-sm text-slate-400 mt-4">
     ¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}" class="text-cyan-400 hover:underline">Accede aquí</a>
   </p>
+  <p class="text-center text-sm text-slate-400 mt-2">
+    ¿Eres el administrador y tu urbanización no está en la lista?
+    <a href="{% url 'accounts:crear_comunidad' %}" class="text-cyan-400 hover:underline">Créala aquí</a>
+  </p>
 </div>
 
 <script>

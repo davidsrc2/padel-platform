@@ -8,6 +8,7 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('registro/', views.registro, name='registro'),
+    path('crear-comunidad/', views.crear_comunidad, name='crear_comunidad'),
     path('perfil/', views.perfil, name='perfil'),
     path('push/suscribir/', views.push_suscribir, name='push_suscribir'),
     path('push/desuscribir/', views.push_desuscribir, name='push_desuscribir'),

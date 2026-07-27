@@ -66,3 +66,48 @@ class RegistroForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class CrearComunidadForm(UserCreationForm):
+    """Alta self-service de una urbanización nueva: crea la Urbanizacion, su
+    primer Portal/Vivienda, y el Usuario que la administra (admin_urb,
+    aprobado automáticamente — es el único responsable de su propia
+    comunidad, no necesita que nadie más lo apruebe)."""
+
+    first_name = forms.CharField(label='Nombre', max_length=150, required=True)
+    last_name = forms.CharField(label='Apellidos', max_length=150, required=True)
+    email = forms.EmailField(label='Email', required=True)
+    telefono = forms.CharField(label='Teléfono', max_length=20, required=False)
+
+    urb_nombre = forms.CharField(label='Nombre de la urbanización', max_length=200)
+    urb_direccion = forms.CharField(label='Dirección', max_length=300)
+    num_pistas = forms.IntegerField(label='Número de pistas', min_value=1, initial=1)
+
+    portal_nombre = forms.CharField(label='Portal', max_length=50, initial='A')
+    piso = forms.CharField(label='Tu piso', max_length=10)
+    puerta = forms.CharField(label='Puerta', max_length=5, required=False)
+
+    class Meta:
+        model = Usuario
+        fields = ('username', 'first_name', 'last_name', 'email', 'telefono', 'password1', 'password2')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+
+        urb = Urbanizacion.objects.create(
+            nombre=self.cleaned_data['urb_nombre'],
+            direccion=self.cleaned_data['urb_direccion'],
+            num_pistas=self.cleaned_data['num_pistas'],
+        )
+        portal = Portal.objects.create(urbanizacion=urb, nombre=self.cleaned_data['portal_nombre'])
+        vivienda = Vivienda.objects.create(
+            portal=portal, piso=self.cleaned_data['piso'], puerta=self.cleaned_data.get('puerta', ''),
+        )
+
+        user.vivienda = vivienda
+        user.telefono = self.cleaned_data.get('telefono', '')
+        user.rol = Usuario.ROL_ADMIN_URB
+        user.aprobado = True
+        if commit:
+            user.save()
+        return user

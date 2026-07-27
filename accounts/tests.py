@@ -34,6 +34,63 @@ class RegistroTest(TestCase):
         self.assertEqual(usuario.rol, Usuario.ROL_VECINO)
 
 
+class CrearComunidadTest(TestCase):
+
+    def _datos_validos(self, **overrides):
+        datos = {
+            'urb_nombre': 'Residencial Las Palmeras',
+            'urb_direccion': 'Av. de las Palmeras 10',
+            'num_pistas': 3,
+            'portal_nombre': 'A',
+            'piso': 'Bajo',
+            'puerta': 'B',
+            'username': 'admin_palmeras',
+            'first_name': 'Laura',
+            'last_name': 'Gómez',
+            'email': 'laura@example.com',
+            'telefono': '',
+            'password1': 'ClaveSegura123!',
+            'password2': 'ClaveSegura123!',
+        }
+        datos.update(overrides)
+        return datos
+
+    def test_crea_urbanizacion_portal_vivienda_y_admin_aprobado(self):
+        resp = self.client.post('/accounts/crear-comunidad/', self._datos_validos())
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, '/panel/')
+
+        urb = Urbanizacion.objects.get(nombre='Residencial Las Palmeras')
+        self.assertEqual(urb.num_pistas, 3)
+
+        admin = Usuario.objects.get(username='admin_palmeras')
+        self.assertEqual(admin.rol, Usuario.ROL_ADMIN_URB)
+        self.assertTrue(admin.aprobado)
+        self.assertEqual(admin.urbanizacion, urb)
+
+    def test_deja_logueado_tras_crear(self):
+        self.client.post('/accounts/crear-comunidad/', self._datos_validos())
+        resp = self.client.get('/panel/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Residencial Las Palmeras')
+
+    def test_username_duplicado_no_crea_nada(self):
+        Usuario.objects.create_user(username='admin_palmeras', password='x')
+        resp = self.client.post('/accounts/crear-comunidad/', self._datos_validos())
+        self.assertEqual(resp.status_code, 200)  # vuelve a mostrar el form con el error
+        self.assertFalse(Urbanizacion.objects.filter(nombre='Residencial Las Palmeras').exists())
+
+    def test_admin_de_una_comunidad_no_ve_datos_de_otra(self):
+        self.client.post('/accounts/crear-comunidad/', self._datos_validos())
+        self.client.logout()
+        self.client.post('/accounts/crear-comunidad/', self._datos_validos(
+            urb_nombre='Otra Urb', username='admin_otra', email='otra@example.com',
+        ))
+        resp = self.client.get('/panel/')
+        self.assertContains(resp, 'Otra Urb')
+        self.assertNotContains(resp, 'Residencial Las Palmeras')
+
+
 class PerfilTest(TestCase):
 
     def test_perfil_requiere_login(self):

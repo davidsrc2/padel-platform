@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
 from .emails import enviar_aprobacion_usuario
-from .forms import PerfilForm, RegistroForm
+from .forms import CrearComunidadForm, PerfilForm, RegistroForm
 from .models import PushSubscription, Usuario
 from viviendas.models import Portal, Vivienda
 
@@ -23,6 +23,19 @@ def registro(request):
     else:
         form = RegistroForm()
     return render(request, 'accounts/registro.html', {'form': form})
+
+
+def crear_comunidad(request):
+    if request.method == 'POST':
+        form = CrearComunidadForm(request.POST)
+        if form.is_valid():
+            admin = form.save()
+            login(request, admin, backend='django.contrib.auth.backends.ModelBackend')
+            messages.success(request, f'"{admin.urbanizacion.nombre}" creada. Ya puedes configurarla desde el panel.')
+            return redirect('panel:inicio')
+    else:
+        form = CrearComunidadForm()
+    return render(request, 'accounts/crear_comunidad.html', {'form': form})
 
 
 @login_required
