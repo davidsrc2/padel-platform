@@ -1,12 +1,20 @@
 {% if urbanizaciones %}
-<form method="get" class="mb-4">
-  <label class="text-sm text-slate-400 mr-2">Urbanización:</label>
-  <select name="urbanizacion" onchange="this.form.submit()" class="!w-auto text-sm">
-    {% for u in urbanizaciones %}
-      <option value="{{ u.pk }}" {% if u.pk == urb.pk %}selected{% endif %}>{{ u.nombre }}</option>
-    {% endfor %}
-  </select>
-</form>
+<div class="flex items-center gap-3 mb-4">
+  <form method="get" class="inline">
+    <label class="text-sm text-slate-400 mr-2">Urbanización:</label>
+    <select name="urbanizacion" onchange="this.form.submit()" class="!w-auto text-sm">
+      {% for u in urbanizaciones %}
+        <option value="{{ u.pk }}" {% if u.pk == urb.pk %}selected{% endif %}>{{ u.nombre }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <a href="{% url 'panel:urbanizacion_crear' %}" class="text-xs text-cyan-400 hover:underline whitespace-nowrap">
+    + Nueva urbanización
+  </a>
+  <a href="{% url 'accounts:crear_comunidad' %}" class="text-xs text-cyan-400 hover:underline whitespace-nowrap">
+    + Nueva urbanización con administrador
+  </a>
+</div>
 {% endif %}
 
 <div class="flex items-center flex-wrap gap-2 mb-6 text-sm">

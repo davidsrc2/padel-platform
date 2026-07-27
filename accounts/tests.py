@@ -35,6 +35,8 @@ class RegistroTest(TestCase):
 
 
 class CrearComunidadTest(TestCase):
+    """/accounts/crear-comunidad/ es una herramienta de superadmin, no un
+    formulario público — cualquiera que no sea superadmin debe quedar fuera."""
 
     def _datos_validos(self, **overrides):
         datos = {
@@ -55,10 +57,31 @@ class CrearComunidadTest(TestCase):
         datos.update(overrides)
         return datos
 
-    def test_crea_urbanizacion_portal_vivienda_y_admin_aprobado(self):
+    def _crear_superadmin(self, username='super1'):
+        return Usuario.objects.create_superuser(
+            username=username, email=f'{username}@example.com', password='pass',
+            rol=Usuario.ROL_SUPERADMIN,
+        )
+
+    def test_anonimo_no_puede_crear_comunidades(self):
         resp = self.client.post('/accounts/crear-comunidad/', self._datos_validos())
         self.assertEqual(resp.status_code, 302)
-        self.assertEqual(resp.url, '/panel/')
+        self.assertIn('/accounts/login/', resp.url)
+        self.assertFalse(Urbanizacion.objects.filter(nombre='Residencial Las Palmeras').exists())
+
+    def test_un_admin_urb_no_puede_crear_comunidades(self):
+        admin_urb = _crear_usuario_basico('admin_urb1')
+        admin_urb.rol = Usuario.ROL_ADMIN_URB
+        admin_urb.save()
+        self.client.force_login(admin_urb)
+        resp = self.client.post('/accounts/crear-comunidad/', self._datos_validos())
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(Urbanizacion.objects.filter(nombre='Residencial Las Palmeras').exists())
+
+    def test_superadmin_crea_urbanizacion_portal_vivienda_y_admin_aprobado(self):
+        self.client.force_login(self._crear_superadmin())
+        resp = self.client.post('/accounts/crear-comunidad/', self._datos_validos())
+        self.assertEqual(resp.status_code, 302)
 
         urb = Urbanizacion.objects.get(nombre='Residencial Las Palmeras')
         self.assertEqual(urb.num_pistas, 3)
@@ -68,24 +91,29 @@ class CrearComunidadTest(TestCase):
         self.assertTrue(admin.aprobado)
         self.assertEqual(admin.urbanizacion, urb)
 
-    def test_deja_logueado_tras_crear(self):
+    def test_superadmin_sigue_logueado_como_el_mismo_tras_crear(self):
+        superadmin = self._crear_superadmin()
+        self.client.force_login(superadmin)
         self.client.post('/accounts/crear-comunidad/', self._datos_validos())
-        resp = self.client.get('/panel/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, 'Residencial Las Palmeras')
+        resp = self.client.get('/accounts/perfil/')
+        self.assertContains(resp, superadmin.username)
 
     def test_username_duplicado_no_crea_nada(self):
         Usuario.objects.create_user(username='admin_palmeras', password='x')
+        self.client.force_login(self._crear_superadmin())
         resp = self.client.post('/accounts/crear-comunidad/', self._datos_validos())
         self.assertEqual(resp.status_code, 200)  # vuelve a mostrar el form con el error
         self.assertFalse(Urbanizacion.objects.filter(nombre='Residencial Las Palmeras').exists())
 
     def test_admin_de_una_comunidad_no_ve_datos_de_otra(self):
+        self.client.force_login(self._crear_superadmin())
         self.client.post('/accounts/crear-comunidad/', self._datos_validos())
-        self.client.logout()
         self.client.post('/accounts/crear-comunidad/', self._datos_validos(
             urb_nombre='Otra Urb', username='admin_otra', email='otra@example.com',
         ))
+        self.client.logout()
+
+        self.client.force_login(Usuario.objects.get(username='admin_otra'))
         resp = self.client.get('/panel/')
         self.assertContains(resp, 'Otra Urb')
         self.assertNotContains(resp, 'Residencial Las Palmeras')

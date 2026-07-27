@@ -13,6 +13,7 @@ urlpatterns = [
     path('', views.inicio, name='inicio'),
 
     path('urbanizacion/', urbanizaciones_views.panel_urbanizacion, name='urbanizacion'),
+    path('urbanizacion/crear/', urbanizaciones_views.panel_urbanizacion_crear, name='urbanizacion_crear'),
 
     path('portales/', viviendas_views.panel_portales, name='portales'),
     path('portales/crear/', viviendas_views.panel_portal_crear, name='portal_crear'),

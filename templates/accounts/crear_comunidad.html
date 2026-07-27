@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Dar de alta tu urbanización — Pádel{% endblock %}
+{% block title %}Dar de alta una comunidad — Pádel{% endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto mt-8 glass rounded-2xl shadow-glow p-8">
   <h1 class="text-2xl font-bold mb-1 text-center bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">
-    Da de alta tu urbanización
+    Dar de alta una comunidad
   </h1>
   <p class="text-sm text-slate-400 mb-6 text-center">
-    Crea tu comunidad y tu cuenta de administrador en un solo paso. Podrás añadir portales, viviendas y pistas después, desde el panel.
+    Crea la urbanización y la cuenta de su administrador en un solo paso. Podrá añadir portales, viviendas y pistas después, desde su panel.
   </p>
 
   {% if form.non_field_errors %}
@@ -67,12 +67,12 @@
 
     <button type="submit"
       class="w-full bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 py-2.5 rounded-lg font-semibold hover:shadow-glowLg transition-shadow">
-      Crear mi urbanización
+      Crear comunidad
     </button>
   </form>
 
-  <p class="text-center text-sm text-slate-400 mt-4">
-    ¿Ya tienes cuenta? <a href="{% url 'accounts:login' %}" class="text-cyan-400 hover:underline">Accede aquí</a>
-  </p>
+  <a href="{% url 'panel:inicio' %}" class="mt-4 inline-block text-cyan-400 hover:underline text-sm">
+    ← Volver al panel
+  </a>
 </div>
 {% endblock %}

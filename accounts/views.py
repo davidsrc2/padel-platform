@@ -1,10 +1,10 @@
 import json
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
 from .emails import enviar_aprobacion_usuario
@@ -25,14 +25,21 @@ def registro(request):
     return render(request, 'accounts/registro.html', {'form': form})
 
 
+@login_required
 def crear_comunidad(request):
+    if request.user.rol != Usuario.ROL_SUPERADMIN:
+        messages.error(request, 'Solo el superadmin puede dar de alta una comunidad nueva.')
+        return redirect('reservas:calendario')
+
     if request.method == 'POST':
         form = CrearComunidadForm(request.POST)
         if form.is_valid():
             admin = form.save()
-            login(request, admin, backend='django.contrib.auth.backends.ModelBackend')
-            messages.success(request, f'"{admin.urbanizacion.nombre}" creada. Ya puedes configurarla desde el panel.')
-            return redirect('panel:inicio')
+            messages.success(
+                request,
+                f'"{admin.urbanizacion.nombre}" creada, con "{admin.username}" como administrador.',
+            )
+            return redirect(f"{reverse('panel:inicio')}?urbanizacion={admin.urbanizacion.pk}")
     else:
         form = CrearComunidadForm()
     return render(request, 'accounts/crear_comunidad.html', {'form': form})

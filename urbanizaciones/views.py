@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import redirect, render
+from django.urls import reverse
 
 from panel.permisos import panel_required, resolver_urbanizacion
 from .forms import UrbanizacionForm
@@ -32,3 +33,28 @@ def panel_urbanizacion(request):
     return render(request, 'panel/urbanizacion.html', {
         'form': form, 'urb': urb, 'urbanizaciones': urbanizaciones,
     })
+
+
+@panel_required
+def panel_urbanizacion_crear(request):
+    if request.user.rol != request.user.ROL_SUPERADMIN:
+        messages.error(request, 'Solo el superadmin puede crear urbanizaciones nuevas.')
+        return redirect('panel:inicio')
+
+    if request.method == 'POST':
+        form = UrbanizacionForm(request.POST)
+        if form.is_valid():
+            try:
+                urb = form.save()
+                messages.success(request, f'"{urb.nombre}" creada. Añádele portales y pistas cuando quieras.')
+                return redirect(f"{reverse('panel:inicio')}?urbanizacion={urb.pk}")
+            except ValidationError as e:
+                messages.error(request, ' '.join(e.messages))
+        else:
+            for errores in form.errors.values():
+                for error in errores:
+                    messages.error(request, error)
+    else:
+        form = UrbanizacionForm()
+
+    return render(request, 'panel/urbanizacion_crear.html', {'form': form})
