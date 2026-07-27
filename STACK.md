@@ -25,7 +25,9 @@
 - Cada vista de `reservas`/`panel` usa uno de esos dos helpers — es el patrón a seguir para cualquier vista nueva que toque datos de una urbanización.
 - Verificado con tests (`panel/tests.py`, `reservas/tests.py`): un `admin_urb` no puede ver ni tocar datos de otra urbanización; un vecino no puede acceder al panel.
 
-Alta de comunidades: self-service desde `/accounts/crear-comunidad/` (crea Urbanizacion + Portal + Vivienda + admin_urb aprobado en un paso, sin admin de Django). Sin gatekeeping de superadmin por diseño — ver roadmap punto 6 (rate limiting) como mitigación de abuso futura.
+Alta de comunidades (decisión: gestionada, no autoservicio público — David prefirió que pase por él):
+- `panel:urbanizacion_crear` — superadmin crea solo la `Urbanizacion` (sin portal/vivienda/admin), pensado para dejar el hueco listo.
+- `accounts:crear_comunidad` (`/accounts/crear-comunidad/`) — superadmin crea Urbanizacion + Portal + Vivienda + admin_urb aprobado en un paso. Ambas requieren login de superadmin (`@login_required` + check de rol); no hijackea la sesión del superadmin (no hace login automático como el admin recién creado).
 
 ## Arrancar / parar (local)
 
@@ -45,7 +47,7 @@ CI en GitHub Actions (`.github/workflows/tests.yml`): corre el test suite comple
 
 Objetivo: pasar de "una comunidad de prueba" a una plataforma que dé de alta comunidades reales sin intervención manual. Por prioridad:
 
-1. ~~**Alta de comunidades self-service.**~~ ✅ Hecho — `/accounts/crear-comunidad/`.
+1. ~~**Alta de comunidades.**~~ ✅ Hecho — pero gestionada por superadmin, no autoservicio público (decisión explícita, ver sección de Multi-tenencia arriba).
 2. **Cola de tareas en background** (Celery/RQ + Redis) para email/push — ahora mismo se envían de forma síncrona dentro del ciclo request-response. A más volumen de reservas simultáneas, esto empieza a notarse en latencia.
 3. **Facturación** si el modelo pasa a ser de pago: Stripe, planes por urbanización (límites de pistas/vecinos atados al plan).
 4. **Panel de superadmin para gestionar muchas urbanizaciones**: listado con búsqueda/filtro/estado, no solo el selector desplegable actual (pensado para pocas).
