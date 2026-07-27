@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'viviendas',
     'pistas',
     'reservas',
+    'panel',
 ]
 
 MIDDLEWARE = [
@@ -92,6 +93,10 @@ STORAGES = {
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/reservas/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Dominio público de la app, para construir URLs absolutas en emails
+# (los clientes de correo no tienen "página actual" desde la que resolver rutas relativas).
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', '')

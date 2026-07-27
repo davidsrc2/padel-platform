@@ -1,0 +1,35 @@
+{% if urbanizaciones %}
+<form method="get" class="mb-4">
+  <label class="text-sm text-slate-400 mr-2">Urbanización:</label>
+  <select name="urbanizacion" onchange="this.form.submit()" class="!w-auto text-sm">
+    {% for u in urbanizaciones %}
+      <option value="{{ u.pk }}" {% if u.pk == urb.pk %}selected{% endif %}>{{ u.nombre }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endif %}
+
+<div class="flex items-center flex-wrap gap-2 mb-6 text-sm">
+  {% with activa=request.resolver_match.view_name %}
+    <a href="{% url 'panel:inicio' %}?urbanizacion={{ urb.pk }}"
+      class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:inicio' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
+      Resumen
+    </a>
+    <a href="{% url 'panel:urbanizacion' %}?urbanizacion={{ urb.pk }}"
+      class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:urbanizacion' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
+      Ajustes
+    </a>
+    <a href="{% url 'panel:portales' %}?urbanizacion={{ urb.pk }}"
+      class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:portales' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
+      Portales
+    </a>
+    <a href="{% url 'panel:pistas' %}?urbanizacion={{ urb.pk }}"
+      class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:pistas' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
+      Pistas
+    </a>
+    <a href="{% url 'panel:usuarios' %}?urbanizacion={{ urb.pk }}"
+      class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:usuarios' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
+      Usuarios
+    </a>
+  {% endwith %}
+</div>

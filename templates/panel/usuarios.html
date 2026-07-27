@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Usuarios — Panel{% endblock %}
+
+{% block content %}
+{% include "panel/_subnav.html" %}
+
+<h1 class="text-xl font-bold text-slate-100 mb-6">Usuarios</h1>
+
+<h2 class="text-base font-semibold text-amber-300 mb-3">
+  Pendientes de aprobación {% if pendientes %}({{ pendientes|length }}){% endif %}
+</h2>
+{% if pendientes %}
+  <div class="space-y-3 mb-8">
+    {% for u in pendientes %}
+      <div class="glass rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <p class="font-medium text-slate-100">{{ u.get_full_name|default:u.username }}</p>
+          <p class="text-xs text-slate-400">{{ u.email }} · {{ u.vivienda|default:"sin vivienda" }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <form method="post" action="{% url 'panel:usuario_aprobar' u.pk %}?urbanizacion={{ urb.pk }}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors">
+              Aprobar
+            </button>
+          </form>
+          <form method="post" action="{% url 'panel:usuario_rechazar' u.pk %}?urbanizacion={{ urb.pk }}"
+            onsubmit="return confirm('¿Rechazar y eliminar la solicitud de {{ u.get_full_name|default:u.username }}?')">
+            {% csrf_token %}
+            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors">
+              Rechazar
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm mb-8">No hay solicitudes pendientes.</p>
+{% endif %}
+
+<h2 class="text-base font-semibold text-cyan-300 mb-3">Vecinos aprobados ({{ aprobados|length }})</h2>
+{% if aprobados %}
+  <div class="space-y-2">
+    {% for u in aprobados %}
+      <div class="glass rounded-xl p-3 flex items-center justify-between text-sm">
+        <span class="text-slate-200">{{ u.get_full_name|default:u.username }}</span>
+        <span class="text-slate-500">{{ u.vivienda|default:"sin vivienda" }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm">Todavía no hay vecinos aprobados.</p>
+{% endif %}
+{% endblock %}

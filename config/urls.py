@@ -18,6 +18,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('reservas/', include('reservas.urls')),
+    path('panel/', include('panel.urls')),
     path('sw.js', service_worker, name='sw'),
     path('', lambda request: redirect('reservas:calendario')),
 ]

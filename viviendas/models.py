@@ -10,6 +10,10 @@ class Portal(models.Model):
         unique_together = ('urbanizacion', 'nombre')
         ordering = ['nombre']
 
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f'Portal {self.nombre} — {self.urbanizacion}'
 
@@ -22,6 +26,10 @@ class Vivienda(models.Model):
     class Meta:
         unique_together = ('portal', 'piso', 'puerta')
         ordering = ['portal', 'piso', 'puerta']
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def urbanizacion(self):

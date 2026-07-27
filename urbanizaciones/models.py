@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -16,6 +17,17 @@ class Urbanizacion(models.Model):
     class Meta:
         verbose_name = 'Urbanización'
         verbose_name_plural = 'Urbanizaciones'
+
+    def clean(self):
+        if self.pk and self.num_pistas < self.pistas.count():
+            raise ValidationError(
+                f'No puedes bajar el número de pistas a {self.num_pistas}: '
+                f'ya hay {self.pistas.count()} pista(s) creada(s). Elimínalas primero.'
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre

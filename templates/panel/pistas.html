@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Pistas — Panel{% endblock %}
+
+{% block content %}
+{% include "panel/_subnav.html" %}
+
+<h1 class="text-xl font-bold text-slate-100 mb-6">
+  Pistas <span class="text-slate-500 text-base">({{ pistas|length }} de {{ urb.num_pistas }})</span>
+</h1>
+
+<div class="glass rounded-2xl p-6 mb-8">
+  <h2 class="text-sm font-semibold text-cyan-300 mb-3">Añadir pista</h2>
+  <form method="post" action="{% url 'panel:pista_crear' %}?urbanizacion={{ urb.pk }}" class="flex items-end gap-3">
+    {% csrf_token %}
+    <div class="flex-1">
+      {{ pista_form.nombre }}
+    </div>
+    <button type="submit"
+      class="bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 px-4 py-2 rounded-lg font-semibold text-sm hover:shadow-glowLg transition-shadow whitespace-nowrap">
+      Añadir
+    </button>
+  </form>
+  {% if pistas|length >= urb.num_pistas %}
+    <p class="text-amber-300 text-xs mt-2">
+      Has alcanzado el máximo de {{ urb.num_pistas }} pista(s). Sube ese número en "Ajustes" para poder añadir más.
+    </p>
+  {% endif %}
+</div>
+
+<div class="space-y-3">
+  {% for pista in pistas %}
+    <div class="glass rounded-xl p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="w-2 h-2 rounded-full {% if pista.activa %}bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]{% else %}bg-slate-500{% endif %}"></span>
+        <span class="font-medium text-slate-100">{{ pista.nombre }}</span>
+        <span class="text-xs {% if pista.activa %}text-emerald-300{% else %}text-slate-500{% endif %}">
+          {% if pista.activa %}Activa{% else %}Inactiva{% endif %}
+        </span>
+      </div>
+      <div class="flex items-center gap-4">
+        <form method="post" action="{% url 'panel:pista_toggle' pista.pk %}?urbanizacion={{ urb.pk }}">
+          {% csrf_token %}
+          <button type="submit" class="text-sm text-cyan-400 hover:underline">
+            {% if pista.activa %}Desactivar{% else %}Activar{% endif %}
+          </button>
+        </form>
+        <form method="post" action="{% url 'panel:pista_eliminar' pista.pk %}?urbanizacion={{ urb.pk }}"
+          onsubmit="return confirm('¿Eliminar la pista {{ pista.nombre }}?')">
+          {% csrf_token %}
+          <button type="submit" class="text-sm text-red-400 hover:text-red-300 hover:underline">Eliminar</button>
+        </form>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-slate-400 text-sm">No hay pistas todavía. Añade una arriba.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Portales y viviendas — Panel{% endblock %}
+
+{% block content %}
+{% include "panel/_subnav.html" %}
+
+<h1 class="text-xl font-bold text-slate-100 mb-6">Portales y viviendas</h1>
+
+<div class="glass rounded-2xl p-6 mb-8">
+  <h2 class="text-sm font-semibold text-cyan-300 mb-3">Añadir portal</h2>
+  <form method="post" action="{% url 'panel:portal_crear' %}?urbanizacion={{ urb.pk }}" class="flex items-end gap-3">
+    {% csrf_token %}
+    <div class="flex-1">
+      {{ portal_form.nombre }}
+    </div>
+    <button type="submit"
+      class="bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 px-4 py-2 rounded-lg font-semibold text-sm hover:shadow-glowLg transition-shadow whitespace-nowrap">
+      Añadir
+    </button>
+  </form>
+</div>
+
+{% for portal in portales %}
+  <div class="glass rounded-2xl p-6 mb-4">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-slate-100">Portal {{ portal.nombre }}</h3>
+      <form method="post" action="{% url 'panel:portal_eliminar' portal.pk %}?urbanizacion={{ urb.pk }}"
+        onsubmit="return confirm('¿Eliminar el portal {{ portal.nombre }} y sus {{ portal.viviendas.all|length }} vivienda(s)?')">
+        {% csrf_token %}
+        <button type="submit" class="text-xs text-red-400 hover:text-red-300 hover:underline">Eliminar portal</button>
+      </form>
+    </div>
+
+    {% if portal.viviendas.all %}
+      <div class="space-y-2 mb-4">
+        {% for v in portal.viviendas.all %}
+          <div class="flex items-center justify-between text-sm bg-white/[0.03] rounded-lg px-3 py-2">
+            <span class="text-slate-200">{{ v.piso }}{% if v.puerta %}-{{ v.puerta }}{% endif %}</span>
+            <form method="post" action="{% url 'panel:vivienda_eliminar' v.pk %}?urbanizacion={{ urb.pk }}"
+              onsubmit="return confirm('¿Eliminar la vivienda {{ v.piso }}{% if v.puerta %}-{{ v.puerta }}{% endif %}?')">
+              {% csrf_token %}
+              <button type="submit" class="text-xs text-red-400 hover:text-red-300 hover:underline">Eliminar</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-slate-500 text-sm mb-4">Sin viviendas todavía.</p>
+    {% endif %}
+
+    <form method="post" action="{% url 'panel:vivienda_crear' portal.pk %}?urbanizacion={{ urb.pk }}" class="flex items-end gap-2">
+      {% csrf_token %}
+      <div class="w-24">
+        <label class="block text-xs text-slate-400 mb-1">Piso</label>
+        {{ vivienda_form.piso }}
+      </div>
+      <div class="w-20">
+        <label class="block text-xs text-slate-400 mb-1">Puerta</label>
+        {{ vivienda_form.puerta }}
+      </div>
+      <button type="submit"
+        class="text-sm px-3 py-2 rounded-lg glass text-cyan-300 hover:border-cyan-400/40 transition-colors whitespace-nowrap">
+        + Vivienda
+      </button>
+    </form>
+  </div>
+{% empty %}
+  <p class="text-slate-400 text-sm">No hay portales todavía. Añade uno arriba.</p>
+{% endfor %}
+{% endblock %}

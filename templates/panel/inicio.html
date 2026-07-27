@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Panel de gestión — Pádel{% endblock %}
+
+{% block content %}
+{% if urbanizaciones %}
+<form method="get" class="mb-4">
+  <label class="text-sm text-slate-400 mr-2">Urbanización:</label>
+  <select name="urbanizacion" onchange="this.form.submit()" class="!w-auto text-sm">
+    {% for u in urbanizaciones %}
+      <option value="{{ u.pk }}" {% if u.pk == urb.pk %}selected{% endif %}>{{ u.nombre }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endif %}
+
+<h1 class="text-xl font-bold text-slate-100 mb-6">
+  Panel de gestión
+  {% if urb %}
+    <span class="text-slate-500">·</span>
+    <span class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">{{ urb.nombre }}</span>
+  {% endif %}
+</h1>
+
+{% if not urb %}
+  <p class="text-slate-400 text-sm">No hay ninguna urbanización creada todavía. Créala desde el admin de Django.</p>
+{% else %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <a href="{% url 'panel:urbanizacion' %}?urbanizacion={{ urb.pk }}"
+      class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors">
+      <p class="text-sm text-slate-400 mb-1">Ajustes</p>
+      <p class="text-lg font-semibold text-slate-100">Horarios y reglas de reserva</p>
+    </a>
+    <a href="{% url 'panel:portales' %}?urbanizacion={{ urb.pk }}"
+      class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors">
+      <p class="text-sm text-slate-400 mb-1">{{ n_portales }} portal{{ n_portales|pluralize:"es" }}</p>
+      <p class="text-lg font-semibold text-slate-100">Portales y viviendas</p>
+    </a>
+    <a href="{% url 'panel:pistas' %}?urbanizacion={{ urb.pk }}"
+      class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors">
+      <p class="text-sm text-slate-400 mb-1">{{ n_pistas }} de {{ urb.num_pistas }} pista{{ urb.num_pistas|pluralize }}</p>
+      <p class="text-lg font-semibold text-slate-100">Pistas</p>
+    </a>
+    <a href="{% url 'panel:usuarios' %}?urbanizacion={{ urb.pk }}"
+      class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors relative">
+      <p class="text-sm text-slate-400 mb-1">{{ n_vecinos }} vecino{{ n_vecinos|pluralize }}</p>
+      <p class="text-lg font-semibold text-slate-100">Usuarios</p>
+      {% if n_pendientes %}
+        <span class="absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300">
+          {{ n_pendientes }} pendiente{{ n_pendientes|pluralize }}
+        </span>
+      {% endif %}
+    </a>
+  </div>
+{% endif %}
+{% endblock %}

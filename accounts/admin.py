@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from .emails import enviar_aprobacion_usuario
 from .models import Usuario
 
 admin.site.site_header = 'Pádel — Administración'
@@ -23,4 +24,7 @@ class UsuarioAdmin(UserAdmin):
 
     @admin.action(description='Aprobar usuarios seleccionados')
     def aprobar_usuarios(self, request, queryset):
-        queryset.update(aprobado=True)
+        for usuario in queryset.filter(aprobado=False):
+            usuario.aprobado = True
+            usuario.save()
+            enviar_aprobacion_usuario(usuario)

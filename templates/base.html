@@ -63,6 +63,9 @@
           <a href="{% url 'reservas:calendario' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Calendario</a>
           <a href="{% url 'reservas:mis_reservas' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Mis reservas</a>
           <a href="{% url 'accounts:perfil' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Perfil</a>
+          {% if user.rol == user.ROL_ADMIN_URB or user.rol == user.ROL_SUPERADMIN %}
+            <a href="{% url 'panel:inicio' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Panel</a>
+          {% endif %}
           {% if user.is_staff %}
             <a href="{% url 'admin:index' %}" class="whitespace-nowrap hover:text-cyan-300 transition-colors">Admin</a>
           {% endif %}
