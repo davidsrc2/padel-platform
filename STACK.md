@@ -1,14 +1,57 @@
 # Stack
 
-- Django 6.0.7 + PostgreSQL 16 (Docker)
-- BD ya es Postgres (no SQLite) — en producción (Render/Railway/etc.) solo cambian las env vars de conexión
-- Tailwind vía django-tailwind
-- Auth custom: `accounts.Usuario`
+- Django 6.0.7 + PostgreSQL 16 (Docker en local, gestionado en Render en producción)
+- Tailwind vía CDN (Play CDN) + htmx 2.0.4 para reservar/cancelar sin recargar página
+- Email: Brevo vía django-anymail (SMTP saliente bloqueado en Render free — por eso API HTTPS, no SMTP). Resend disponible como alternativa.
+- Push notifications: pywebpush + VAPID, service worker en `static/sw.js`
+- PWA instalable (manifest, iconos, meta tags iOS/Android)
+- whitenoise + gunicorn para producción
+- Auth custom: `accounts.Usuario` (roles: `vecino`, `admin_urb`, `superadmin`)
 
-## Arrancar / parar
+## Apps
+
+- `accounts` — usuarios, roles, perfil, push subscriptions, emails de aprobación
+- `urbanizaciones` — el modelo `Urbanizacion` (tenant), sus ajustes (horarios, límites de reserva)
+- `viviendas` — `Portal` y `Vivienda`, jerarquía urbanización → portal → vivienda
+- `pistas` — `Pista` y `BloqueoPista` (bloqueos de mantenimiento)
+- `reservas` — el núcleo: reservas, calendario, franjas, recordatorios
+- `panel` — panel de gestión para `admin_urb`/`superadmin` (no usan el admin de Django)
+
+## Multi-tenencia (cómo está montado ahora)
+
+`Urbanizacion` es el límite de tenant. Todo lo demás cuelga de ahí (`Portal → Vivienda → Usuario`, `Pista → Reserva`). El aislamiento es a nivel de aplicación, no de base de datos:
+
+- `panel/permisos.py`: `resolver_urbanizacion(request)` decide qué urbanización gestiona el usuario (fija para `admin_urb`, seleccionable por `?urbanizacion=` para `superadmin`), y `limitar_a_urbanizacion(request, queryset, campo=...)` filtra cualquier queryset a esa urbanización si el usuario es `admin_urb`.
+- Cada vista de `reservas`/`panel` usa uno de esos dos helpers — es el patrón a seguir para cualquier vista nueva que toque datos de una urbanización.
+- Verificado con tests (`panel/tests.py`, `reservas/tests.py`): un `admin_urb` no puede ver ni tocar datos de otra urbanización; un vecino no puede acceder al panel.
+
+**Punto débil:** crear una `Urbanizacion` nueva solo se puede hacer desde el admin de Django (superadmin). No hay alta de comunidades self-service — ver roadmap.
+
+## Arrancar / parar (local)
 
 ```
 ./dev.sh
 ```
 
-Levanta Postgres (Docker), aplica migraciones y arranca el server. Enter para parar todo.
+Levanta Postgres (Docker), aplica migraciones, corre `seed_demo` (usuarios de prueba: `superadmin`/`admin_urb`/`vecino`, password `Test1234`) y arranca el server. Enter para parar todo.
+
+## Despliegue
+
+Render (staging: `padel-staging.onrender.com`). `build.sh` hace `pip install` + `collectstatic` + `migrate` + `ensure_superadmin` (crea el superadmin desde `DJANGO_SUPERUSER_*` si no existe). Variables de entorno: ver `.env.example`.
+
+CI en GitHub Actions (`.github/workflows/tests.yml`): corre el test suite completo contra Postgres real en cada push/PR a `master`.
+
+## Roadmap — hacia mayor escala
+
+Objetivo: pasar de "una comunidad de prueba" a una plataforma que dé de alta comunidades reales sin intervención manual. Por prioridad:
+
+1. **Alta de comunidades self-service.** Hoy solo el superadmin puede crear una `Urbanizacion` (vía admin de Django). Es el bloqueo real para crecer: sin esto, cada comunidad nueva exige trabajo manual. Diseño: un flujo de registro que cree `Urbanizacion` + primer `admin_urb` en un solo paso, sin pasar por `/admin/`.
+2. **Cola de tareas en background** (Celery/RQ + Redis) para email/push — ahora mismo se envían de forma síncrona dentro del ciclo request-response. A más volumen de reservas simultáneas, esto empieza a notarse en latencia.
+3. **Facturación** si el modelo pasa a ser de pago: Stripe, planes por urbanización (límites de pistas/vecinos atados al plan).
+4. **Panel de superadmin para gestionar muchas urbanizaciones**: listado con búsqueda/filtro/estado, no solo el selector desplegable actual (pensado para pocas).
+5. **Observabilidad**: Sentry (o similar) para errores en producción — ahora mismo solo hay logs en Render, nadie se entera de un fallo salvo que un vecino se queje.
+6. **Rate limiting** en login/registro público (django-ratelimit) antes de exponerlo a desconocidos a gran escala.
+7. **Endurecer aislamiento de datos**: el filtrado actual es a nivel de aplicación (correcto y testeado), pero si esto maneja datos de muchas comunidades reales, plantearse Row-Level Security en Postgres como defensa adicional.
+8. **Legal**: política de privacidad y términos de servicio si se gestionan datos personales (nombre, teléfono, email) de vecinos de varias comunidades distintas.
+
+El punto 1 es el que de verdad bloquea crecer — el resto solo importa una vez haya varias comunidades reales usándolo.
