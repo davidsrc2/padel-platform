@@ -9,6 +9,8 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('registro/', views.registro, name='registro'),
     path('perfil/', views.perfil, name='perfil'),
+    path('push/suscribir/', views.push_suscribir, name='push_suscribir'),
+    path('push/desuscribir/', views.push_desuscribir, name='push_desuscribir'),
     path('ajax/portales/', views.portales_ajax, name='portales_ajax'),
     path('ajax/viviendas/', views.viviendas_ajax, name='viviendas_ajax'),
 

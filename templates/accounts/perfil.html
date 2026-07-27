@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Mi perfil — Pádel{% endblock %}
 
 {% block content %}
@@ -70,5 +71,13 @@
     class="mt-6 inline-block text-cyan-400 hover:underline text-sm">
     Cambiar contraseña
   </a>
+
+  {% if VAPID_PUBLIC_KEY %}
+    <button id="push-toggle" type="button"
+      class="mt-4 w-full text-sm px-4 py-2.5 rounded-lg glass text-cyan-300 hover:border-cyan-400/40 transition-colors">
+      Cargando estado de notificaciones…
+    </button>
+    <script src="{% static 'js/push.js' %}"></script>
+  {% endif %}
 </div>
 {% endblock %}

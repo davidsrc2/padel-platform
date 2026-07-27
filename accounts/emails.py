@@ -5,10 +5,19 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
+from .push import enviar_push
+
 logger = logging.getLogger(__name__)
 
 
 def enviar_aprobacion_usuario(usuario):
+    enviar_push(
+        usuario,
+        titulo='Pádel · Cuenta aprobada',
+        cuerpo='Ya puedes acceder y reservar pista.',
+        url='/reservas/',
+    )
+
     if not usuario.email:
         logger.warning(
             'No se envía email de aprobación: el usuario "%s" no tiene email.',

@@ -49,6 +49,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.vapid_public_key',
             ],
         },
     },
@@ -114,6 +115,13 @@ ANYMAIL = {
     'RESEND_API_KEY': os.environ.get('RESEND_API_KEY', ''),
     'BREVO_API_KEY': os.environ.get('BREVO_API_KEY', ''),
 }
+
+# Notificaciones push del navegador. Sin estas variables definidas, el envío
+# de push es un no-op silencioso (ver accounts/push.py) — el resto de la app
+# sigue funcionando igual, simplemente nadie recibe push.
+VAPID_PUBLIC_KEY = os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_CLAIM_EMAIL = os.environ.get('VAPID_CLAIM_EMAIL', 'no-reply@padel-urbanizacion.local')
 
 # Render (y la mayoría de PaaS) terminan el HTTPS en su proxy y reenvían a
 # la app por HTTP interno. Sin esto, request.is_secure() siempre da False

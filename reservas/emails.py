@@ -4,18 +4,30 @@ from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
+from accounts.push import enviar_push
+
 logger = logging.getLogger(__name__)
 
 
 def _enviar(reserva, asunto, estado_label, color, intro):
+    nombre = reserva.usuario.get_full_name() or reserva.usuario.username
+
+    enviar_push(
+        reserva.usuario,
+        titulo=f'Pádel · {asunto}',
+        cuerpo=(
+            f'{reserva.pista.nombre} · {reserva.fecha.strftime("%d/%m")} '
+            f'{reserva.hora_inicio.strftime("%H:%M")}–{reserva.hora_fin.strftime("%H:%M")}'
+        ),
+        url='/reservas/mis-reservas/',
+    )
+
     if not reserva.usuario.email:
         logger.warning(
             'No se envía email de reserva: el usuario "%s" no tiene email.',
             reserva.usuario.username,
         )
         return
-
-    nombre = reserva.usuario.get_full_name() or reserva.usuario.username
     contexto = {
         'asunto': asunto,
         'estado_label': estado_label,

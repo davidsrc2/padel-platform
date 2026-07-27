@@ -35,3 +35,16 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return f'{self.get_full_name() or self.username} ({self.get_rol_display()})'
+
+
+class PushSubscription(models.Model):
+    """Una suscripción de notificaciones push por navegador/dispositivo."""
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='push_subscriptions')
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Suscripción push de {self.usuario}'

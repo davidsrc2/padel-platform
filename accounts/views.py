@@ -1,11 +1,15 @@
+import json
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
 from .emails import enviar_aprobacion_usuario
 from .forms import PerfilForm, RegistroForm
-from .models import Usuario
+from .models import PushSubscription, Usuario
 from viviendas.models import Portal, Vivienda
 
 
@@ -79,6 +83,42 @@ def panel_usuario_rechazar(request, pk):
         usuario.delete()
         messages.success(request, f'Solicitud de {nombre} rechazada y eliminada.')
     return redirect(request.META.get('HTTP_REFERER') or 'panel:usuarios')
+
+
+@login_required
+@require_POST
+def push_suscribir(request):
+    try:
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        return JsonResponse({'ok': False}, status=400)
+
+    endpoint = data.get('endpoint')
+    claves = data.get('keys', {})
+    if not endpoint or not claves.get('p256dh') or not claves.get('auth'):
+        return JsonResponse({'ok': False}, status=400)
+
+    PushSubscription.objects.update_or_create(
+        endpoint=endpoint,
+        defaults={'usuario': request.user, 'p256dh': claves['p256dh'], 'auth': claves['auth']},
+    )
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def push_desuscribir(request):
+    try:
+        data = json.loads(request.body)
+    except (ValueError, TypeError):
+        data = {}
+
+    endpoint = data.get('endpoint')
+    if endpoint:
+        PushSubscription.objects.filter(usuario=request.user, endpoint=endpoint).delete()
+    else:
+        PushSubscription.objects.filter(usuario=request.user).delete()
+    return JsonResponse({'ok': True})
 
 
 def portales_ajax(request):
