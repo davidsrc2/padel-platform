@@ -43,5 +43,9 @@
       class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:estadisticas' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
       Estadísticas
     </a>
+    <a href="{% url 'panel:resultados' %}?urbanizacion={{ urb.pk }}"
+      class="px-3 py-1.5 rounded-lg glass whitespace-nowrap transition-colors {% if activa == 'panel:resultados' %}text-cyan-300 border-cyan-400/40{% else %}text-slate-300 hover:text-cyan-300{% endif %}">
+      Resultados
+    </a>
   {% endwith %}
 </div>

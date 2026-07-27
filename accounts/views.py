@@ -55,7 +55,11 @@ def perfil(request):
             return redirect('accounts:perfil')
     else:
         form = PerfilForm(instance=request.user)
-    return render(request, 'accounts/perfil.html', {'usuario': request.user, 'form': form})
+
+    from reservas.estadisticas import calcular_estadisticas
+    stats = calcular_estadisticas(request.user)
+
+    return render(request, 'accounts/perfil.html', {'usuario': request.user, 'form': form, 'stats': stats})
 
 
 @panel_required

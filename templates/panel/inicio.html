@@ -68,6 +68,16 @@
       <p class="text-sm text-slate-400 mb-1">Ocupación y actividad</p>
       <p class="text-lg font-semibold text-slate-100">Estadísticas</p>
     </a>
+    <a href="{% url 'panel:resultados' %}?urbanizacion={{ urb.pk }}"
+      class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors relative">
+      <p class="text-sm text-slate-400 mb-1">Confirmaciones y disputas</p>
+      <p class="text-lg font-semibold text-slate-100">Resultados</p>
+      {% if n_disputados %}
+        <span class="absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400">
+          {{ n_disputados }} disputado{{ n_disputados|pluralize }}
+        </span>
+      {% endif %}
+    </a>
   </div>
 {% endif %}
 {% endblock %}

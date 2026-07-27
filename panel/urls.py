@@ -2,6 +2,7 @@ from django.urls import path
 
 from accounts import views as accounts_views
 from pistas import views as pistas_views
+from reservas import views as reservas_views
 from urbanizaciones import views as urbanizaciones_views
 from viviendas import views as viviendas_views
 
@@ -33,4 +34,7 @@ urlpatterns = [
     path('usuarios/<int:pk>/rechazar/', accounts_views.panel_usuario_rechazar, name='usuario_rechazar'),
 
     path('estadisticas/', views.estadisticas, name='estadisticas'),
+
+    path('resultados/', reservas_views.panel_resultados, name='resultados'),
+    path('resultados/<int:pk>/resolver/', reservas_views.panel_resultado_resolver, name='resultado_resolver'),
 ]

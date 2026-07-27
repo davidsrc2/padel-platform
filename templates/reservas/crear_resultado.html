@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Registrar resultado — Pádel{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-bold text-slate-100 mb-2">Registrar resultado</h1>
+<p class="text-sm text-slate-400 mb-6">
+  {{ reserva.pista.nombre }} · {{ reserva.fecha|date:"d/m/Y" }} {{ reserva.hora_inicio|time:"H:i" }}–{{ reserva.hora_fin|time:"H:i" }}
+</p>
+
+<div class="max-w-lg glass rounded-2xl shadow-glow p-8">
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="bg-red-500/10 border border-red-500/30 text-red-300 text-sm rounded-lg px-4 py-3 space-y-1">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <div>
+      <h2 class="text-sm font-semibold text-cyan-300 mb-3">Jugadores</h2>
+      <p class="text-xs text-slate-500 mb-3">Tú ya estás en el equipo A. Deja los campos de dobles en blanco si jugasteis 1 contra 1.</p>
+      <div class="space-y-4">
+        {% for field in form %}
+          {% if field.name in "equipo_a_companero,equipo_b_jugador1,equipo_b_jugador2" %}
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-1">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pt-4 border-t border-white/10">
+      <h2 class="text-sm font-semibold text-cyan-300 mb-3">Resultado por sets</h2>
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-500 w-12">Set 1</span>
+          {{ form.set1_a }}
+          <span class="text-slate-500">–</span>
+          {{ form.set1_b }}
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-500 w-12">Set 2</span>
+          {{ form.set2_a }}
+          <span class="text-slate-500">–</span>
+          {{ form.set2_b }}
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-500 w-12">Set 3</span>
+          {{ form.set3_a }}
+          <span class="text-slate-500">–</span>
+          {{ form.set3_b }}
+        </div>
+        <label class="flex items-center gap-2 text-xs text-slate-400">
+          {{ form.set3_es_super_tiebreak }}
+          {{ form.set3_es_super_tiebreak.label }}
+        </label>
+      </div>
+    </div>
+
+    <button type="submit"
+      class="w-full bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 py-2.5 rounded-lg font-semibold hover:shadow-glowLg transition-shadow">
+      Registrar resultado
+    </button>
+  </form>
+
+  <a href="{% url 'reservas:mis_partidos' %}" class="mt-4 inline-block text-cyan-400 hover:underline text-sm">
+    ← Volver a mis partidos
+  </a>
+</div>
+
+<style>
+  #id_set1_a, #id_set1_b, #id_set2_a, #id_set2_b, #id_set3_a, #id_set3_b {
+    width: 4rem; text-align: center;
+  }
+</style>
+{% endblock %}

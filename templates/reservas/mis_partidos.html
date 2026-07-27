@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Mis partidos — Pádel{% endblock %}
+
+{% block content %}
+<h1 class="text-xl font-bold text-slate-100 mb-6">Mis partidos</h1>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+  <div class="glass rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-slate-100">{{ stats.jugados }}</p>
+    <p class="text-xs text-slate-500">Jugados</p>
+  </div>
+  <div class="glass rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold text-emerald-300">{{ stats.pct_victorias }}%</p>
+    <p class="text-xs text-slate-500">{{ stats.ganados }}V — {{ stats.perdidos }}D</p>
+  </div>
+  <div class="glass rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold {% if stats.diferencia_juegos >= 0 %}text-emerald-300{% else %}text-red-400{% endif %}">
+      {{ stats.diferencia_juegos|stringformat:"+d" }}
+    </p>
+    <p class="text-xs text-slate-500">Dif. juegos</p>
+  </div>
+  <div class="glass rounded-xl p-4 text-center">
+    <p class="text-2xl font-bold {% if stats.racha_actual > 0 %}text-emerald-300{% elif stats.racha_actual < 0 %}text-red-400{% else %}text-slate-400{% endif %}">
+      {{ stats.racha_actual }}
+    </p>
+    <p class="text-xs text-slate-500">Racha actual</p>
+  </div>
+</div>
+
+{% if stats.ultimos_resultados %}
+  <div class="flex items-center gap-1.5 mb-8">
+    <span class="text-xs text-slate-500 mr-2">Últimos:</span>
+    {% for r in stats.ultimos_resultados %}
+      <span class="w-6 h-6 grid place-items-center rounded-full text-xs font-bold
+        {% if r == 'V' %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-400{% endif %}">
+        {{ r }}
+      </span>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if pendientes %}
+  <h2 class="text-base font-semibold text-amber-300 mb-3">Pendientes de resultado</h2>
+  <div class="space-y-2 mb-8">
+    {% for r in pendientes %}
+      <div class="glass rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap">
+        <span class="text-sm text-slate-300">
+          {{ r.pista.nombre }} · {{ r.fecha|date:"d/m/Y" }} {{ r.hora_inicio|time:"H:i" }}
+        </span>
+        <a href="{% url 'reservas:crear_resultado' r.pk %}"
+          class="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 font-semibold">
+          Añadir resultado
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<h2 class="text-base font-semibold text-cyan-300 mb-3">Historial</h2>
+{% if resultados %}
+  <div class="space-y-3">
+    {% for r in resultados %}
+      <div class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="text-sm">
+            <span class="text-slate-300">{{ r.reserva.pista.nombre }} · {{ r.reserva.fecha|date:"d/m/Y" }}</span>
+            <span class="ml-2 text-slate-500">
+              {% for s in r.sets.all %}{{ s.juegos_equipo_a }}-{{ s.juegos_equipo_b }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            {% if r.estado == 'confirmado' %}
+              {% if r.gano_propio == True or r.gano_propio == False %}
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold {% if r.gano_propio %}bg-emerald-500/15 text-emerald-300{% else %}bg-red-500/15 text-red-400{% endif %}">
+                  {% if r.gano_propio %}Ganado{% else %}Perdido{% endif %}
+                </span>
+              {% endif %}
+            {% elif r.estado == 'pendiente' %}
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300">Pendiente de confirmar</span>
+            {% else %}
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400">Disputado</span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if r.estado == 'pendiente' and r.creado_por_id != request.user.id %}
+          <div class="flex items-center gap-3 mt-3 pt-3 border-t border-white/10">
+            <form method="post" action="{% url 'reservas:confirmar_resultado' r.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors">
+                Confirmar
+              </button>
+            </form>
+            <form method="post" action="{% url 'reservas:disputar_resultado' r.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                onclick="return confirm('¿Marcar este resultado como incorrecto? Un administrador lo revisará.')"
+                class="text-sm px-3 py-1.5 rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors">
+                No es correcto
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm">Todavía no tienes partidos registrados.</p>
+{% endif %}
+{% endblock %}

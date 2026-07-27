@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Resultados — Panel{% endblock %}
+
+{% block content %}
+{% include "panel/_subnav.html" %}
+
+<h1 class="text-xl font-bold text-slate-100 mb-6">Resultados de partidos</h1>
+
+<h2 class="text-base font-semibold text-red-400 mb-3">
+  Disputados {% if disputados %}({{ disputados|length }}){% endif %}
+</h2>
+{% if disputados %}
+  <div class="space-y-3 mb-8">
+    {% for r in disputados %}
+      <div class="glass rounded-xl p-4">
+        <p class="text-sm text-slate-300 mb-1">
+          {{ r.reserva.pista.nombre }} · {{ r.reserva.fecha|date:"d/m/Y" }}
+          — {% for s in r.sets.all %}{{ s.juegos_equipo_a }}-{{ s.juegos_equipo_b }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+        <p class="text-xs text-slate-500 mb-3">
+          Equipo A: {% for j in r.equipo_a.all %}{{ j.get_full_name|default:j.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+          · Equipo B: {% for j in r.equipo_b.all %}{{ j.get_full_name|default:j.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+        <div class="flex items-center gap-3">
+          <form method="post" action="{% url 'panel:resultado_resolver' r.pk %}?urbanizacion={{ urb.pk }}">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="confirmar">
+            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors">
+              Dar por válido
+            </button>
+          </form>
+          <form method="post" action="{% url 'panel:resultado_resolver' r.pk %}?urbanizacion={{ urb.pk }}"
+            onsubmit="return confirm('¿Eliminar este resultado? Se podrá volver a registrar desde cero.')">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="eliminar">
+            <button type="submit" class="text-sm px-3 py-1.5 rounded-lg bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors">
+              Eliminar
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm mb-8">No hay resultados disputados.</p>
+{% endif %}
+
+<h2 class="text-base font-semibold text-amber-300 mb-3">
+  Pendientes de confirmación {% if pendientes %}({{ pendientes|length }}){% endif %}
+</h2>
+{% if pendientes %}
+  <div class="space-y-2">
+    {% for r in pendientes %}
+      <div class="glass rounded-xl p-3 flex items-center justify-between text-sm">
+        <span class="text-slate-300">
+          {{ r.reserva.pista.nombre }} · {{ r.reserva.fecha|date:"d/m/Y" }} · registrado por {{ r.creado_por.get_full_name|default:r.creado_por.username }}
+        </span>
+        <span class="text-slate-500">{{ r.fecha_registro|date:"d/m H:i" }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm">No hay resultados pendientes.</p>
+{% endif %}
+{% endblock %}

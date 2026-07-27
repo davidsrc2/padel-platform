@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from accounts.models import Usuario
 from pistas.models import Pista
-from reservas.models import Reserva
+from reservas.models import Reserva, ResultadoPartido
 from viviendas.models import Portal
 
 from .permisos import panel_required, resolver_urbanizacion
@@ -23,6 +23,9 @@ def inicio(request):
             'n_vecinos': Usuario.objects.filter(vivienda__portal__urbanizacion=urb, aprobado=True).count(),
             'n_portales': Portal.objects.filter(urbanizacion=urb).count(),
             'n_pistas': Pista.objects.filter(urbanizacion=urb).count(),
+            'n_disputados': ResultadoPartido.objects.filter(
+                reserva__pista__urbanizacion=urb, estado=ResultadoPartido.ESTADO_DISPUTADO,
+            ).count(),
         })
 
     return render(request, 'panel/inicio.html', contexto)
