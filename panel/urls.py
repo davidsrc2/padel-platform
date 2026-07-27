@@ -24,8 +24,12 @@ urlpatterns = [
     path('pistas/crear/', pistas_views.panel_pista_crear, name='pista_crear'),
     path('pistas/<int:pk>/toggle/', pistas_views.panel_pista_toggle, name='pista_toggle'),
     path('pistas/<int:pk>/eliminar/', pistas_views.panel_pista_eliminar, name='pista_eliminar'),
+    path('pistas/<int:pista_pk>/bloqueos/crear/', pistas_views.panel_bloqueo_crear, name='bloqueo_crear'),
+    path('bloqueos/<int:pk>/eliminar/', pistas_views.panel_bloqueo_eliminar, name='bloqueo_eliminar'),
 
     path('usuarios/', accounts_views.panel_usuarios, name='usuarios'),
     path('usuarios/<int:pk>/aprobar/', accounts_views.panel_usuario_aprobar, name='usuario_aprobar'),
     path('usuarios/<int:pk>/rechazar/', accounts_views.panel_usuario_rechazar, name='usuario_rechazar'),
+
+    path('estadisticas/', views.estadisticas, name='estadisticas'),
 ]

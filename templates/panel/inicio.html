@@ -50,6 +50,11 @@
         </span>
       {% endif %}
     </a>
+    <a href="{% url 'panel:estadisticas' %}?urbanizacion={{ urb.pk }}"
+      class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors">
+      <p class="text-sm text-slate-400 mb-1">Ocupación y actividad</p>
+      <p class="text-lg font-semibold text-slate-100">Estadísticas</p>
+    </a>
   </div>
 {% endif %}
 {% endblock %}

@@ -69,3 +69,13 @@ def enviar_cancelacion_reserva(reserva):
         color='#ef4444',
         intro='Tu reserva ha sido cancelada. Estos eran sus detalles:',
     )
+
+
+def enviar_recordatorio_reserva(reserva):
+    _enviar(
+        reserva,
+        asunto='Recordatorio de tu reserva',
+        estado_label='Próximamente',
+        color='#06b6d4',
+        intro='Tu reserva es pronto. Aquí tienes los detalles:',
+    )

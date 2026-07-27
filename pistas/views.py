@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
-from .forms import PistaForm
-from .models import Pista
+from .forms import BloqueoPistaForm, PistaForm
+from .models import BloqueoPista, Pista
 
 
 @panel_required
@@ -14,12 +15,20 @@ def panel_pistas(request):
         messages.error(request, 'No hay ninguna urbanización creada todavía.')
         return redirect('panel:inicio')
 
-    pistas = Pista.objects.filter(urbanizacion=urb).order_by('nombre')
+    hoy = timezone.localdate()
+    pistas_ctx = [
+        {
+            'pista': p,
+            'bloqueos': BloqueoPista.objects.filter(pista=p, fecha__gte=hoy).order_by('fecha', 'hora_inicio'),
+        }
+        for p in Pista.objects.filter(urbanizacion=urb).order_by('nombre')
+    ]
     return render(request, 'panel/pistas.html', {
         'urb': urb,
         'urbanizaciones': urbanizaciones,
-        'pistas': pistas,
+        'pistas_ctx': pistas_ctx,
         'pista_form': PistaForm(),
+        'bloqueo_form': BloqueoPistaForm(auto_id=False),
     })
 
 
@@ -66,4 +75,33 @@ def panel_pista_eliminar(request, pk):
             nombre = pista.nombre
             pista.delete()
             messages.success(request, f'Pista "{nombre}" eliminada.')
+    return redirect(request.META.get('HTTP_REFERER') or 'panel:pistas')
+
+
+@panel_required
+def panel_bloqueo_crear(request, pista_pk):
+    pista = get_object_or_404(limitar_a_urbanizacion(request, Pista.objects.all()), pk=pista_pk)
+    if request.method == 'POST':
+        form = BloqueoPistaForm(request.POST, pista=pista)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, f'Bloqueo añadido a "{pista.nombre}".')
+            except ValidationError as e:
+                messages.error(request, ' '.join(e.messages))
+        else:
+            for errores in form.errors.values():
+                for error in errores:
+                    messages.error(request, error)
+    return redirect(request.META.get('HTTP_REFERER') or 'panel:pistas')
+
+
+@panel_required
+def panel_bloqueo_eliminar(request, pk):
+    bloqueo = get_object_or_404(
+        limitar_a_urbanizacion(request, BloqueoPista.objects.all(), campo='pista__urbanizacion'), pk=pk
+    )
+    if request.method == 'POST':
+        bloqueo.delete()
+        messages.success(request, 'Bloqueo eliminado.')
     return redirect(request.META.get('HTTP_REFERER') or 'panel:pistas')

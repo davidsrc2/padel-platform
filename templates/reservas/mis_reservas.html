@@ -8,23 +8,34 @@
 {% if reservas %}
   <div class="space-y-3 mb-8">
     {% for r in reservas %}
-      <div class="glass rounded-xl p-4 flex items-center justify-between">
-        <div>
-          <span class="font-medium text-slate-100">{{ r.pista.nombre }}</span>
-          <span class="text-slate-400 text-sm ml-2">{{ r.fecha }} · {{ r.hora_inicio|time:"H:i" }}–{{ r.hora_fin|time:"H:i" }}</span>
+      <div class="glass rounded-xl p-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <span class="font-medium text-slate-100">{{ r.pista.nombre }}</span>
+            <span class="text-slate-400 text-sm ml-2">{{ r.fecha }} · {{ r.hora_inicio|time:"H:i" }}–{{ r.hora_fin|time:"H:i" }}</span>
+          </div>
+          {% if r.puede_cancelar %}
+            <form method="post" action="{% url 'reservas:cancelar' r.pk %}">
+              {% csrf_token %}
+              <button type="submit"
+                onclick="return confirm('¿Cancelar esta reserva?')"
+                class="text-sm text-red-400 hover:text-red-300 hover:underline">
+                Cancelar
+              </button>
+            </form>
+          {% else %}
+            <span class="text-xs text-slate-500">No cancelable</span>
+          {% endif %}
         </div>
-        {% if r.puede_cancelar %}
-          <form method="post" action="{% url 'reservas:cancelar' r.pk %}">
-            {% csrf_token %}
-            <button type="submit"
-              onclick="return confirm('¿Cancelar esta reserva?')"
-              class="text-sm text-red-400 hover:text-red-300 hover:underline">
-              Cancelar
-            </button>
-          </form>
-        {% else %}
-          <span class="text-xs text-slate-500">No cancelable</span>
-        {% endif %}
+        <form method="post" action="{% url 'reservas:editar_companeros' r.pk %}" class="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+          {% csrf_token %}
+          <label class="text-xs text-slate-500 whitespace-nowrap">Con quién juegas:</label>
+          <input type="text" name="companeros" value="{{ r.companeros }}" maxlength="200"
+            placeholder="ej. Juan, Pedro, Ana" class="!w-auto flex-1 !py-1.5 !text-xs">
+          <button type="submit" class="text-xs px-3 py-1.5 rounded-lg glass text-cyan-300 hover:border-cyan-400/40 transition-colors whitespace-nowrap">
+            Guardar
+          </button>
+        </form>
       </div>
     {% endfor %}
   </div>

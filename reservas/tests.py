@@ -5,7 +5,7 @@ from datetime import date, time, timedelta
 
 from urbanizaciones.models import Urbanizacion
 from viviendas.models import Portal, Vivienda
-from pistas.models import Pista
+from pistas.models import BloqueoPista, Pista
 from accounts.models import Usuario
 from .models import Reserva
 
@@ -62,5 +62,13 @@ class ReservaValidacionTest(TestCase):
         urb, pista, user1, _ = _setup()
         muy_lejos = timezone.localdate() + timedelta(days=30)
         r = Reserva(pista=pista, usuario=user1, fecha=muy_lejos, hora_inicio=time(10, 0), hora_fin=time(11, 30))
+        with self.assertRaises(ValidationError):
+            r.full_clean()
+
+    def test_no_se_puede_reservar_franja_bloqueada_por_mantenimiento(self):
+        urb, pista, user1, _ = _setup()
+        manana = timezone.localdate() + timedelta(days=1)
+        BloqueoPista.objects.create(pista=pista, fecha=manana, hora_inicio=time(10, 0), hora_fin=time(11, 0))
+        r = Reserva(pista=pista, usuario=user1, fecha=manana, hora_inicio=time(10, 30), hora_fin=time(12, 0))
         with self.assertRaises(ValidationError):
             r.full_clean()

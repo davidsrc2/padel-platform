@@ -12,33 +12,34 @@
   </select>
 </form>
 {% endif %}
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-  <h1 class="text-xl font-bold text-slate-100">
-    Reservar pista <span class="text-slate-500">·</span>
-    <span class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">{{ urb.nombre }}</span>
-  </h1>
-  <div class="flex items-center gap-3">
-    {% if prev_fecha %}
-      <a href="?fecha={{ prev_fecha|date:'Y-m-d' }}"
-        class="w-8 h-8 grid place-items-center glass rounded-lg text-slate-300 hover:text-cyan-300 hover:border-cyan-400/40 transition-colors">&larr;</a>
-    {% else %}
-      <span class="w-8 h-8 grid place-items-center glass rounded-lg text-slate-600">&larr;</span>
-    {% endif %}
 
-    <form method="get" class="inline">
-      <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}"
-        class="!w-auto text-sm"
-        onchange="this.form.submit()">
-    </form>
+<h1 class="text-xl font-bold text-slate-100 mb-4">
+  Reservar pista <span class="text-slate-500">·</span>
+  <span class="bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">{{ urb.nombre }}</span>
+</h1>
 
-    {% if next_fecha %}
-      <a href="?fecha={{ next_fecha|date:'Y-m-d' }}"
-        class="w-8 h-8 grid place-items-center glass rounded-lg text-slate-300 hover:text-cyan-300 hover:border-cyan-400/40 transition-colors">&rarr;</a>
-    {% else %}
-      <span class="w-8 h-8 grid place-items-center glass rounded-lg text-slate-600">&rarr;</span>
-    {% endif %}
-  </div>
+<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 mb-2">
+  {% for dia in semana %}
+    <a href="?fecha={{ dia.fecha|date:'Y-m-d' }}{% if urbanizaciones %}&urbanizacion={{ urb.pk }}{% endif %}"
+      class="flex flex-col items-center justify-center min-w-[64px] px-3 py-2 rounded-xl transition-colors shrink-0
+      {% if dia.fecha == fecha %}bg-gradient-to-br from-cyan-500 to-violet-500 text-slate-950{% else %}glass text-slate-300 hover:border-cyan-400/40{% endif %}">
+      <span class="text-[10px] uppercase tracking-wide {% if dia.fecha == fecha %}text-slate-900/70{% else %}text-slate-500{% endif %}">
+        {{ dia.fecha|date:"D" }}
+      </span>
+      <span class="text-lg font-bold leading-tight">{{ dia.fecha|date:"j" }}</span>
+      <span class="text-[10px] {% if dia.libres > 0 %}{% if dia.fecha == fecha %}text-slate-900/70{% else %}text-emerald-300{% endif %}{% else %}{% if dia.fecha == fecha %}text-slate-900/50{% else %}text-slate-600{% endif %}{% endif %}">
+        {% if dia.libres > 0 %}{{ dia.libres }} libre{{ dia.libres|pluralize }}{% else %}sin hueco{% endif %}
+      </span>
+    </a>
+  {% endfor %}
 </div>
+
+<form method="get" class="flex items-center gap-2 mb-6">
+  {% if urbanizaciones %}<input type="hidden" name="urbanizacion" value="{{ urb.pk }}">{% endif %}
+  <label class="text-xs text-slate-500">Otra fecha:</label>
+  <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}" min="{{ semana.0.fecha|date:'Y-m-d' }}" max="{{ max_fecha|date:'Y-m-d' }}"
+    class="!w-auto text-xs" onchange="this.form.submit()">
+</form>
 
 {% for item in calendario %}
   <div class="mb-8">
@@ -59,10 +60,18 @@
               {% endif %}
             </div>
           </div>
+        {% elif franja.bloqueada %}
+          <div class="px-3 py-2 rounded-lg bg-amber-500/[0.06] border border-amber-500/20 text-amber-400 text-sm text-center cursor-not-allowed">
+            {{ franja.hora_inicio|time:"H:i" }}–{{ franja.hora_fin|time:"H:i" }}
+            <div class="text-xs text-amber-500/80">{{ franja.motivo_bloqueo|default:"Mantenimiento" }}</div>
+          </div>
         {% elif franja.ocupada %}
           <div class="px-3 py-2 rounded-lg glass text-slate-400 text-sm text-center cursor-not-allowed">
             {{ franja.hora_inicio|time:"H:i" }}–{{ franja.hora_fin|time:"H:i" }}
-            <div class="text-xs text-slate-500">{{ franja.reservado_por.get_full_name|default:franja.reservado_por.username }}</div>
+            <div class="text-xs text-slate-500">
+              {{ franja.reservado_por.get_full_name|default:franja.reservado_por.username }}
+              {% if franja.companeros %}· con {{ franja.companeros }}{% endif %}
+            </div>
           </div>
         {% else %}
           <form method="post" action="{% url 'reservas:crear' %}">

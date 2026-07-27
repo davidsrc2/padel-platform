@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 
-from pistas.models import Pista
+from pistas.models import BloqueoPista, Pista
 from accounts.models import Usuario
 
 
@@ -22,6 +22,8 @@ class Reserva(models.Model):
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     estado = models.CharField(max_length=20, choices=ESTADOS, default=ESTADO_CONFIRMADA)
+    companeros = models.CharField('Con quién juegas', max_length=200, blank=True)
+    recordatorio_enviado = models.BooleanField(default=False)
     creada = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -63,6 +65,16 @@ class Reserva(models.Model):
             solapadas = solapadas.exclude(pk=self.pk)
         if solapadas.exists():
             raise ValidationError('Esa franja ya está ocupada.')
+
+        # Bloqueada por mantenimiento
+        bloqueada = BloqueoPista.objects.filter(
+            pista=self.pista,
+            fecha=self.fecha,
+            hora_inicio__lt=self.hora_fin,
+            hora_fin__gt=self.hora_inicio,
+        ).exists()
+        if bloqueada:
+            raise ValidationError('Esa franja está bloqueada por mantenimiento.')
 
         # Límite de reservas activas por vivienda
         if self.usuario.vivienda and self.estado == self.ESTADO_CONFIRMADA:

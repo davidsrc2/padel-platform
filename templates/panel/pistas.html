@@ -5,7 +5,7 @@
 {% include "panel/_subnav.html" %}
 
 <h1 class="text-xl font-bold text-slate-100 mb-6">
-  Pistas <span class="text-slate-500 text-base">({{ pistas|length }} de {{ urb.num_pistas }})</span>
+  Pistas <span class="text-slate-500 text-base">({{ pistas_ctx|length }} de {{ urb.num_pistas }})</span>
 </h1>
 
 <div class="glass rounded-2xl p-6 mb-8">
@@ -20,7 +20,7 @@
       Añadir
     </button>
   </form>
-  {% if pistas|length >= urb.num_pistas %}
+  {% if pistas_ctx|length >= urb.num_pistas %}
     <p class="text-amber-300 text-xs mt-2">
       Has alcanzado el máximo de {{ urb.num_pistas }} pista(s). Sube ese número en "Ajustes" para poder añadir más.
     </p>
@@ -28,29 +28,78 @@
 </div>
 
 <div class="space-y-3">
-  {% for pista in pistas %}
-    <div class="glass rounded-xl p-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <span class="w-2 h-2 rounded-full {% if pista.activa %}bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]{% else %}bg-slate-500{% endif %}"></span>
-        <span class="font-medium text-slate-100">{{ pista.nombre }}</span>
-        <span class="text-xs {% if pista.activa %}text-emerald-300{% else %}text-slate-500{% endif %}">
-          {% if pista.activa %}Activa{% else %}Inactiva{% endif %}
-        </span>
+  {% for item in pistas_ctx %}
+    {% with pista=item.pista %}
+    <div class="glass rounded-xl p-4">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <span class="w-2 h-2 rounded-full {% if pista.activa %}bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]{% else %}bg-slate-500{% endif %}"></span>
+          <span class="font-medium text-slate-100">{{ pista.nombre }}</span>
+          <span class="text-xs {% if pista.activa %}text-emerald-300{% else %}text-slate-500{% endif %}">
+            {% if pista.activa %}Activa{% else %}Inactiva{% endif %}
+          </span>
+        </div>
+        <div class="flex items-center gap-4">
+          <form method="post" action="{% url 'panel:pista_toggle' pista.pk %}?urbanizacion={{ urb.pk }}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm text-cyan-400 hover:underline">
+              {% if pista.activa %}Desactivar{% else %}Activar{% endif %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'panel:pista_eliminar' pista.pk %}?urbanizacion={{ urb.pk }}"
+            onsubmit="return confirm('¿Eliminar la pista {{ pista.nombre }}?')">
+            {% csrf_token %}
+            <button type="submit" class="text-sm text-red-400 hover:text-red-300 hover:underline">Eliminar</button>
+          </form>
+        </div>
       </div>
-      <div class="flex items-center gap-4">
-        <form method="post" action="{% url 'panel:pista_toggle' pista.pk %}?urbanizacion={{ urb.pk }}">
+
+      <div class="mt-3 pt-3 border-t border-white/10">
+        <p class="text-xs text-slate-500 mb-2">Bloqueos de mantenimiento</p>
+        {% if item.bloqueos %}
+          <div class="space-y-1 mb-2">
+            {% for b in item.bloqueos %}
+              <div class="flex items-center justify-between text-xs bg-amber-500/[0.06] border border-amber-500/20 rounded-lg px-3 py-1.5">
+                <span class="text-amber-300">
+                  {{ b.fecha|date:"d/m/Y" }} {{ b.hora_inicio|time:"H:i" }}–{{ b.hora_fin|time:"H:i" }}
+                  {% if b.motivo %}· {{ b.motivo }}{% endif %}
+                </span>
+                <form method="post" action="{% url 'panel:bloqueo_eliminar' b.pk %}?urbanizacion={{ urb.pk }}">
+                  {% csrf_token %}
+                  <button type="submit" class="text-red-400 hover:text-red-300 hover:underline">Quitar</button>
+                </form>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-slate-600 text-xs mb-2">Sin bloqueos programados.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'panel:bloqueo_crear' pista.pk %}?urbanizacion={{ urb.pk }}" class="flex items-end gap-2 flex-wrap">
           {% csrf_token %}
-          <button type="submit" class="text-sm text-cyan-400 hover:underline">
-            {% if pista.activa %}Desactivar{% else %}Activar{% endif %}
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-1">Fecha</label>
+            {{ bloqueo_form.fecha }}
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-1">Desde</label>
+            {{ bloqueo_form.hora_inicio }}
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-1">Hasta</label>
+            {{ bloqueo_form.hora_fin }}
+          </div>
+          <div class="flex-1 min-w-[120px]">
+            <label class="block text-[10px] text-slate-500 mb-1">Motivo</label>
+            {{ bloqueo_form.motivo }}
+          </div>
+          <button type="submit" class="text-xs px-3 py-2 rounded-lg glass text-amber-300 hover:border-amber-400/40 transition-colors whitespace-nowrap">
+            + Bloquear
           </button>
-        </form>
-        <form method="post" action="{% url 'panel:pista_eliminar' pista.pk %}?urbanizacion={{ urb.pk }}"
-          onsubmit="return confirm('¿Eliminar la pista {{ pista.nombre }}?')">
-          {% csrf_token %}
-          <button type="submit" class="text-sm text-red-400 hover:text-red-300 hover:underline">Eliminar</button>
         </form>
       </div>
     </div>
+    {% endwith %}
   {% empty %}
     <p class="text-slate-400 text-sm">No hay pistas todavía. Añade una arriba.</p>
   {% endfor %}

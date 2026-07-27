@@ -1,5 +1,5 @@
 from django import forms
-from .models import Pista
+from .models import BloqueoPista, Pista
 
 
 class PistaForm(forms.ModelForm):
@@ -14,3 +14,20 @@ class PistaForm(forms.ModelForm):
         # el modelo (full_clean) antes de que la vista pueda asignarla.
         if urbanizacion:
             self.instance.urbanizacion = urbanizacion
+
+
+class BloqueoPistaForm(forms.ModelForm):
+    class Meta:
+        model = BloqueoPista
+        fields = ['fecha', 'hora_inicio', 'hora_fin', 'motivo']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'type': 'date'}),
+            'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
+            'hora_fin': forms.TimeInput(attrs={'type': 'time'}),
+            'motivo': forms.TextInput(attrs={'placeholder': 'Motivo (opcional)'}),
+        }
+
+    def __init__(self, *args, pista=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if pista:
+            self.instance.pista = pista

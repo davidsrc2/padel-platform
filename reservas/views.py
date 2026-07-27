@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from .models import Reserva
 from .forms import ReservaForm
 from .emails import enviar_confirmacion_reserva, enviar_cancelacion_reserva
-from pistas.models import Pista
+from pistas.models import BloqueoPista, Pista
 from urbanizaciones.models import Urbanizacion
 
 
@@ -24,19 +24,44 @@ def _franjas_disponibles(pista, fecha):
             pista=pista, fecha=fecha, estado=Reserva.ESTADO_CONFIRMADA
         ).select_related('usuario')
     }
+    bloqueos = list(BloqueoPista.objects.filter(pista=pista, fecha=fecha))
     ahora = timezone.localtime().replace(tzinfo=None)
     actual = apertura
     while actual + duracion <= cierre:
-        reserva = reservas_por_hora.get(actual.time())
+        hora_inicio = actual.time()
+        hora_fin = (actual + duracion).time()
+        reserva = reservas_por_hora.get(hora_inicio)
+        bloqueo = next(
+            (b for b in bloqueos if b.hora_inicio < hora_fin and b.hora_fin > hora_inicio), None
+        )
         franjas.append({
-            'hora_inicio': actual.time(),
-            'hora_fin': (actual + duracion).time(),
+            'hora_inicio': hora_inicio,
+            'hora_fin': hora_fin,
             'ocupada': reserva is not None,
+            'bloqueada': bloqueo is not None,
+            'motivo_bloqueo': bloqueo.motivo if bloqueo else '',
             'pasada': actual + duracion <= ahora,
             'reservado_por': reserva.usuario if reserva else None,
+            'companeros': reserva.companeros if reserva else '',
         })
         actual += duracion
     return franjas
+
+
+def _resumen_semana(pistas, hoy, max_fecha):
+    """Cuenta franjas libres por día, para el selector de semana del calendario."""
+    dias = (max_fecha - hoy).days + 1
+    resumen = []
+    for i in range(min(dias, 7)):
+        dia = hoy + timedelta(days=i)
+        libres = sum(
+            1
+            for pista in pistas
+            for franja in _franjas_disponibles(pista, dia)
+            if not franja['ocupada'] and not franja['bloqueada'] and not franja['pasada']
+        )
+        resumen.append({'fecha': dia, 'libres': libres})
+    return resumen
 
 
 @login_required
@@ -68,16 +93,17 @@ def calendario(request):
 
     fecha = max(hoy, min(fecha, hoy + timedelta(days=urb.antelacion_maxima_dias)))
 
-    pistas = urb.pistas.filter(activa=True)
+    pistas = list(urb.pistas.filter(activa=True))
     calendario_data = [
         {'pista': p, 'franjas': _franjas_disponibles(p, fecha)}
         for p in pistas
     ]
+    max_fecha = hoy + timedelta(days=urb.antelacion_maxima_dias)
 
     context = {
         'fecha': fecha,
-        'prev_fecha': fecha - timedelta(days=1) if fecha > hoy else None,
-        'next_fecha': fecha + timedelta(days=1) if fecha < hoy + timedelta(days=urb.antelacion_maxima_dias) else None,
+        'max_fecha': max_fecha,
+        'semana': _resumen_semana(pistas, hoy, max_fecha),
         'calendario': calendario_data,
         'urb': urb,
         'urbanizaciones': urbanizaciones,
@@ -142,4 +168,17 @@ def cancelar_reserva(request, pk):
         reserva.save()
         enviar_cancelacion_reserva(reserva)
         messages.success(request, 'Reserva cancelada.')
+    return redirect('reservas:mis_reservas')
+
+
+@login_required
+def editar_companeros(request, pk):
+    reserva = get_object_or_404(
+        Reserva, pk=pk, usuario=request.user, estado=Reserva.ESTADO_CONFIRMADA,
+        fecha__gte=timezone.localdate(),
+    )
+    if request.method == 'POST':
+        reserva.companeros = request.POST.get('companeros', '').strip()[:200]
+        reserva.save(update_fields=['companeros'])
+        messages.success(request, 'Actualizado.')
     return redirect('reservas:mis_reservas')

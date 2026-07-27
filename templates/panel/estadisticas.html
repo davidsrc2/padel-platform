@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Estadísticas — Panel{% endblock %}
+
+{% block content %}
+{% include "panel/_subnav.html" %}
+
+<h1 class="text-xl font-bold text-slate-100 mb-6">Estadísticas</h1>
+
+<div class="grid grid-cols-2 gap-4 mb-8">
+  <div class="glass rounded-2xl p-6">
+    <p class="text-sm text-slate-400 mb-1">Reservas totales</p>
+    <p class="text-3xl font-bold text-slate-100">{{ total_reservas }}</p>
+  </div>
+  <div class="glass rounded-2xl p-6">
+    <p class="text-sm text-slate-400 mb-1">Últimos 30 días</p>
+    <p class="text-3xl font-bold text-slate-100">{{ reservas_ultimos_30_dias }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <div class="glass rounded-2xl p-6">
+    <h2 class="text-sm font-semibold text-cyan-300 mb-3">Pistas más usadas</h2>
+    {% if top_pistas %}
+      <div class="space-y-2">
+        {% for p in top_pistas %}
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-200">{{ p.pista__nombre }}</span>
+            <span class="text-slate-500">{{ p.total }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-slate-600 text-sm">Sin datos todavía.</p>
+    {% endif %}
+  </div>
+
+  <div class="glass rounded-2xl p-6">
+    <h2 class="text-sm font-semibold text-cyan-300 mb-3">Franjas más demandadas</h2>
+    {% if top_franjas %}
+      <div class="space-y-2">
+        {% for f in top_franjas %}
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-200">{{ f.hora_inicio|time:"H:i" }}</span>
+            <span class="text-slate-500">{{ f.total }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-slate-600 text-sm">Sin datos todavía.</p>
+    {% endif %}
+  </div>
+
+  <div class="glass rounded-2xl p-6">
+    <h2 class="text-sm font-semibold text-cyan-300 mb-3">Vecinos más activos</h2>
+    {% if top_vecinos %}
+      <div class="space-y-2">
+        {% for v in top_vecinos %}
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-200">{{ v.nombre }}</span>
+            <span class="text-slate-500">{{ v.total }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-slate-600 text-sm">Sin datos todavía.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
