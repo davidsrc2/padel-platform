@@ -72,3 +72,51 @@ class ReservaValidacionTest(TestCase):
         r = Reserva(pista=pista, usuario=user1, fecha=manana, hora_inicio=time(10, 30), hora_fin=time(12, 0))
         with self.assertRaises(ValidationError):
             r.full_clean()
+
+
+class ReservaVistasSeguridadTest(TestCase):
+
+    def test_calendario_requiere_login(self):
+        resp = self.client.get('/reservas/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/accounts/login/', resp.url)
+
+    def test_mis_reservas_requiere_login(self):
+        resp = self.client.get('/reservas/mis-reservas/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/accounts/login/', resp.url)
+
+    def test_no_se_puede_reservar_pista_de_otra_urbanizacion(self):
+        urb_a, pista_a, user_a, _ = _setup()
+        urb_b = Urbanizacion.objects.create(nombre='Urb B', direccion='x')
+        pista_b = Pista.objects.create(urbanizacion=urb_b, nombre='Pista 1')
+
+        self.client.force_login(user_a)
+        manana = timezone.localdate() + timedelta(days=1)
+        resp = self.client.post('/reservas/reservar/', {
+            'pista': pista_b.pk, 'fecha': str(manana), 'hora_inicio': '10:00:00',
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertFalse(Reserva.objects.filter(pista=pista_b, usuario=user_a).exists())
+
+    def test_no_se_puede_cancelar_reserva_ajena(self):
+        urb, pista, user1, user2 = _setup()
+        manana = timezone.localdate() + timedelta(days=1)
+        reserva = Reserva.objects.create(
+            pista=pista, usuario=user1, fecha=manana, hora_inicio=time(10, 0), hora_fin=time(11, 30)
+        )
+        self.client.force_login(user2)
+        resp = self.client.post(f'/reservas/cancelar/{reserva.pk}/')
+        self.assertEqual(resp.status_code, 404)
+        reserva.refresh_from_db()
+        self.assertEqual(reserva.estado, Reserva.ESTADO_CONFIRMADA)
+
+    def test_calendario_de_un_vecino_solo_muestra_pistas_de_su_urbanizacion(self):
+        urb_a, pista_a, user_a, _ = _setup()
+        urb_b = Urbanizacion.objects.create(nombre='Urb B', direccion='x')
+        Pista.objects.create(urbanizacion=urb_b, nombre='Pista de otra urb')
+
+        self.client.force_login(user_a)
+        resp = self.client.get('/reservas/')
+        self.assertContains(resp, pista_a.nombre)
+        self.assertNotContains(resp, 'Pista de otra urb')

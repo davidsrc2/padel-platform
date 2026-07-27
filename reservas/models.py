@@ -34,6 +34,13 @@ class Reserva(models.Model):
         return self.pista.urbanizacion
 
     def clean(self):
+        # Si pista/usuario/fecha/horas no están fijados (p. ej. porque el
+        # campo "pista" falló su propia validación en el ModelForm — un
+        # intento de reservar una pista de otra urbanización), no hay nada
+        # que validar aquí: clean_fields() ya reporta el error de ese campo.
+        if not self.pista_id or not self.usuario_id or self.hora_inicio is None or self.hora_fin is None or self.fecha is None:
+            return
+
         urb = self.pista.urbanizacion
 
         # Fecha en rango permitido
