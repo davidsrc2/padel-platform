@@ -1,8 +1,12 @@
-from django.test import TestCase
+import json
+from unittest.mock import patch
+
+from django.test import TestCase, override_settings
 
 from urbanizaciones.models import Urbanizacion
 from viviendas.models import Portal, Vivienda
-from .models import Usuario
+from .models import PushSubscription, Usuario
+from .push import enviar_push
 
 
 class RegistroTest(TestCase):
@@ -66,3 +70,115 @@ class PerfilTest(TestCase):
         usuario.refresh_from_db()
         self.assertEqual(usuario.email, 'nuevo@example.com')
         self.assertEqual(usuario.telefono, '600111222')
+
+
+def _crear_usuario_basico(username='vecino1'):
+    urb = Urbanizacion.objects.create(nombre='Test', direccion='x')
+    portal = Portal.objects.create(urbanizacion=urb, nombre='A')
+    vivienda = Vivienda.objects.create(portal=portal, piso='1')
+    return Usuario.objects.create_user(
+        username=username, password='pass', vivienda=vivienda, aprobado=True,
+        email=f'{username}@example.com',
+    )
+
+
+class PushSuscripcionVistasTest(TestCase):
+
+    def test_suscribir_requiere_login(self):
+        resp = self.client.post(
+            '/accounts/push/suscribir/',
+            data=json.dumps({'endpoint': 'https://x.test/y', 'keys': {'p256dh': 'a', 'auth': 'b'}}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/accounts/login/', resp.url)
+
+    def test_suscribir_guarda_la_suscripcion(self):
+        usuario = _crear_usuario_basico()
+        self.client.force_login(usuario)
+        resp = self.client.post(
+            '/accounts/push/suscribir/',
+            data=json.dumps({
+                'endpoint': 'https://push.test/abc123',
+                'keys': {'p256dh': 'clave-p256dh', 'auth': 'clave-auth'},
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        sub = PushSubscription.objects.get(endpoint='https://push.test/abc123')
+        self.assertEqual(sub.usuario, usuario)
+        self.assertEqual(sub.p256dh, 'clave-p256dh')
+
+    def test_suscribir_sin_datos_completos_devuelve_400(self):
+        usuario = _crear_usuario_basico()
+        self.client.force_login(usuario)
+        resp = self.client.post(
+            '/accounts/push/suscribir/',
+            data=json.dumps({'endpoint': 'https://push.test/abc123', 'keys': {}}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(PushSubscription.objects.exists())
+
+    def test_desuscribir_borra_la_suscripcion(self):
+        usuario = _crear_usuario_basico()
+        sub = PushSubscription.objects.create(
+            usuario=usuario, endpoint='https://push.test/abc123', p256dh='a', auth='b',
+        )
+        self.client.force_login(usuario)
+        resp = self.client.post(
+            '/accounts/push/desuscribir/',
+            data=json.dumps({'endpoint': sub.endpoint}),
+            content_type='application/json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(PushSubscription.objects.filter(pk=sub.pk).exists())
+
+    def test_no_se_puede_desuscribir_una_suscripcion_ajena_con_endpoint_de_otro(self):
+        usuario1 = _crear_usuario_basico('vecino1')
+        usuario2 = _crear_usuario_basico('vecino2')
+        sub_ajena = PushSubscription.objects.create(
+            usuario=usuario1, endpoint='https://push.test/de-otro', p256dh='a', auth='b',
+        )
+        self.client.force_login(usuario2)
+        self.client.post(
+            '/accounts/push/desuscribir/',
+            data=json.dumps({'endpoint': sub_ajena.endpoint}),
+            content_type='application/json',
+        )
+        self.assertTrue(PushSubscription.objects.filter(pk=sub_ajena.pk).exists())
+
+
+class EnviarPushTest(TestCase):
+
+    @override_settings(VAPID_PRIVATE_KEY='')
+    def test_no_hace_nada_si_no_hay_claves_vapid_configuradas(self):
+        usuario = _crear_usuario_basico()
+        PushSubscription.objects.create(usuario=usuario, endpoint='https://x', p256dh='a', auth='b')
+        with patch('accounts.push.webpush') as mock_webpush:
+            enviar_push(usuario, 'Título', 'Cuerpo')
+            mock_webpush.assert_not_called()
+
+    @override_settings(VAPID_PRIVATE_KEY='clave-privada-de-prueba', VAPID_CLAIM_EMAIL='test@example.com')
+    def test_llama_a_webpush_por_cada_suscripcion_activa(self):
+        usuario = _crear_usuario_basico()
+        PushSubscription.objects.create(usuario=usuario, endpoint='https://x/1', p256dh='a', auth='b')
+        PushSubscription.objects.create(usuario=usuario, endpoint='https://x/2', p256dh='c', auth='d')
+        with patch('accounts.push.webpush') as mock_webpush:
+            enviar_push(usuario, 'Título', 'Cuerpo', url='/reservas/')
+            self.assertEqual(mock_webpush.call_count, 2)
+
+    @override_settings(VAPID_PRIVATE_KEY='clave-privada-de-prueba')
+    def test_borra_la_suscripcion_si_el_navegador_ya_no_existe(self):
+        from pywebpush import WebPushException
+
+        usuario = _crear_usuario_basico()
+        sub = PushSubscription.objects.create(usuario=usuario, endpoint='https://x/1', p256dh='a', auth='b')
+
+        class RespuestaFalsa:
+            status_code = 410
+
+        with patch('accounts.push.webpush', side_effect=WebPushException('caducada', response=RespuestaFalsa())):
+            enviar_push(usuario, 'Título', 'Cuerpo')
+
+        self.assertFalse(PushSubscription.objects.filter(pk=sub.pk).exists())
