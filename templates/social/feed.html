@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Feed — Pádel{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+  <h1 class="text-xl font-bold text-slate-100">Feed</h1>
+  <a href="{% url 'social:directorio' %}" class="text-sm text-cyan-400 hover:underline">Vecinos →</a>
+</div>
+
+{% if resultados %}
+  <div class="space-y-3">
+    {% for r in resultados %}
+      <div class="glass rounded-xl p-4">
+        <p class="text-sm text-slate-300">
+          {% for j in r.equipo_a_jugadores %}{{ j.nombre }}{% if not forloop.last %} / {% endif %}{% endfor %}
+          <span class="text-slate-500">vs</span>
+          {% for j in r.equipo_b_jugadores %}{{ j.nombre }}{% if not forloop.last %} / {% endif %}{% endfor %}
+        </p>
+        <p class="text-xs text-slate-500 mt-1">
+          {{ r.reserva.pista.nombre }} · {{ r.reserva.fecha|date:"d/m/Y" }} ·
+          {% for s in r.sets.all %}{{ s.juegos_equipo_a }}-{{ s.juegos_equipo_b }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm">
+    Aquí verás los resultados confirmados de los vecinos que sigas.
+    <a href="{% url 'social:directorio' %}" class="text-cyan-400 hover:underline">Empieza a seguir a alguien</a>.
+  </p>
+{% endif %}
+{% endblock %}

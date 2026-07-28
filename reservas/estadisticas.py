@@ -1,6 +1,4 @@
-from django.db.models import Q
-
-from .models import ResultadoPartido
+from .models import Participante, ResultadoPartido
 
 
 def calcular_estadisticas(usuario, ultimos_n=10):
@@ -10,11 +8,11 @@ def calcular_estadisticas(usuario, ultimos_n=10):
     partidos por jugador crece mucho, valorar guardar contadores agregados."""
     resultados = list(
         ResultadoPartido.objects.filter(
-            Q(equipo_a=usuario) | Q(equipo_b=usuario),
+            participantes__usuario=usuario,
             estado=ResultadoPartido.ESTADO_CONFIRMADO,
         )
         .distinct()
-        .prefetch_related('sets', 'equipo_a', 'equipo_b')
+        .prefetch_related('sets', 'participantes')
         .order_by('reserva__fecha', 'reserva__hora_inicio')
     )
 
@@ -27,7 +25,9 @@ def calcular_estadisticas(usuario, ultimos_n=10):
         gano = r.gano(usuario)
         if gano is None:
             continue
-        en_equipo_a = r.equipo_a.filter(pk=usuario.pk).exists()
+        en_equipo_a = any(
+            p.usuario_id == usuario.pk and p.equipo == Participante.EQUIPO_A for p in r.participantes.all()
+        )
 
         for s in r.sets.all():
             propios, rivales = (s.juegos_equipo_a, s.juegos_equipo_b) if en_equipo_a \

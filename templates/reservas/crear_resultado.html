@@ -18,16 +18,19 @@
 
     <div>
       <h2 class="text-sm font-semibold text-cyan-300 mb-3">Jugadores</h2>
-      <p class="text-xs text-slate-500 mb-3">Tú ya estás en el equipo A. Deja los campos de dobles en blanco si jugasteis 1 contra 1.</p>
-      <div class="space-y-4">
-        {% for field in form %}
-          {% if field.name in "equipo_a_companero,equipo_b_jugador1,equipo_b_jugador2" %}
-            <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1">{{ field.label }}</label>
-              {{ field }}
-              {% if field.errors %}<p class="text-red-400 text-xs mt-1">{{ field.errors|join:", " }}</p>{% endif %}
-            </div>
-          {% endif %}
+      <p class="text-xs text-slate-500 mb-3">
+        Tú ya estás en el equipo A. Deja los campos de dobles en blanco si jugasteis 1 contra 1.
+        Si alguien no tiene perfil en la app, escribe su nombre en vez de elegirlo en la lista.
+      </p>
+      <div class="space-y-5">
+        {% for principal, invitado in form.pares_jugador %}
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1">{{ principal.label }}</label>
+            {{ principal }}
+            {% if principal.errors %}<p class="text-red-400 text-xs mt-1">{{ principal.errors|join:", " }}</p>{% endif %}
+            {{ invitado }}
+            {% if invitado.errors %}<p class="text-red-400 text-xs mt-1">{{ invitado.errors|join:", " }}</p>{% endif %}
+          </div>
         {% endfor %}
       </div>
     </div>

@@ -59,7 +59,13 @@ def perfil(request):
     from reservas.estadisticas import calcular_estadisticas
     stats = calcular_estadisticas(request.user)
 
-    return render(request, 'accounts/perfil.html', {'usuario': request.user, 'form': form, 'stats': stats})
+    return render(request, 'accounts/perfil.html', {
+        'usuario': request.user,
+        'form': form,
+        'stats': stats,
+        'n_seguidores': request.user.seguidores.count(),
+        'n_siguiendo': request.user.siguiendo.count(),
+    })
 
 
 @panel_required

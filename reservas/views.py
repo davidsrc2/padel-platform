@@ -1,4 +1,3 @@
-from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,7 +9,7 @@ from datetime import timedelta, datetime
 
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
 from .estadisticas import calcular_estadisticas
-from .models import Reserva, ResultadoPartido
+from .models import Participante, Reserva, ResultadoPartido
 from .forms import ReservaForm, ResultadoPartidoForm
 from .emails import enviar_confirmacion_reserva, enviar_cancelacion_reserva
 from pistas.models import BloqueoPista, Pista
@@ -270,17 +269,19 @@ def mis_partidos(request):
     usuario = request.user
     pendientes = _partidos_pendientes_de(usuario)
     resultados = (
-        ResultadoPartido.objects.filter(Q(equipo_a=usuario) | Q(equipo_b=usuario))
+        ResultadoPartido.objects.filter(participantes__usuario=usuario)
         .distinct()
         .select_related('reserva', 'reserva__pista')
-        .prefetch_related('sets', 'equipo_a', 'equipo_b')
+        .prefetch_related('sets', 'participantes', 'participantes__usuario')
         .order_by('-reserva__fecha', '-reserva__hora_inicio')
     )
-    # gano() exige el usuario cuyo resultado se consulta, así que no se puede
-    # llamar como `r.gano` desde la plantilla (Django no la invoca si requiere
-    # argumentos) — se precalcula aquí para la perspectiva de quien mira la página.
+    # gano()/jugadores() exigen argumentos, así que no se pueden llamar como
+    # `r.gano`/`r.jugadores` desde la plantilla (Django no invoca callables
+    # que requieren argumentos) — se precalculan aquí.
     for r in resultados:
         r.gano_propio = r.gano(usuario)
+        propio_en_a = any(p.usuario_id == usuario.pk and p.equipo == Participante.EQUIPO_A for p in r.participantes.all())
+        r.rivales = r.jugadores(Participante.EQUIPO_B if propio_en_a else Participante.EQUIPO_A)
     stats = calcular_estadisticas(usuario)
     return render(request, 'reservas/mis_partidos.html', {
         'pendientes': pendientes,
@@ -318,7 +319,7 @@ def crear_resultado(request, reserva_pk):
 @login_required
 def confirmar_resultado(request, pk):
     resultado = get_object_or_404(ResultadoPartido, pk=pk, estado=ResultadoPartido.ESTADO_PENDIENTE)
-    if not resultado.equipo_b.filter(pk=request.user.pk).exists():
+    if not resultado.participantes.filter(equipo=Participante.EQUIPO_B, usuario=request.user).exists():
         messages.error(request, 'Solo un jugador del equipo rival puede confirmar este resultado.')
         return redirect('reservas:mis_partidos')
     if request.method == 'POST':
@@ -333,7 +334,7 @@ def confirmar_resultado(request, pk):
 @login_required
 def disputar_resultado(request, pk):
     resultado = get_object_or_404(ResultadoPartido, pk=pk, estado=ResultadoPartido.ESTADO_PENDIENTE)
-    if not resultado.equipo_b.filter(pk=request.user.pk).exists():
+    if not resultado.participantes.filter(equipo=Participante.EQUIPO_B, usuario=request.user).exists():
         messages.error(request, 'Solo un jugador del equipo rival puede disputar este resultado.')
         return redirect('reservas:mis_partidos')
     if request.method == 'POST':
@@ -352,12 +353,19 @@ def panel_resultados(request):
 
     base = ResultadoPartido.objects.filter(reserva__pista__urbanizacion=urb).select_related(
         'reserva', 'reserva__pista', 'creado_por'
-    ).prefetch_related('sets', 'equipo_a', 'equipo_b')
+    ).prefetch_related('sets', 'participantes', 'participantes__usuario')
+
+    disputados = list(base.filter(estado=ResultadoPartido.ESTADO_DISPUTADO))
+    # jugadores(equipo) exige un argumento, así que no se puede llamar desde
+    # la plantilla como `r.jugadores` (mismo caso que gano() en mis_partidos).
+    for r in disputados:
+        r.equipo_a_jugadores = r.jugadores(Participante.EQUIPO_A)
+        r.equipo_b_jugadores = r.jugadores(Participante.EQUIPO_B)
 
     return render(request, 'panel/resultados.html', {
         'urb': urb,
         'urbanizaciones': urbanizaciones,
-        'disputados': base.filter(estado=ResultadoPartido.ESTADO_DISPUTADO),
+        'disputados': disputados,
         'pendientes': base.filter(estado=ResultadoPartido.ESTADO_PENDIENTE),
     })
 

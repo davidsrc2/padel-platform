@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from accounts.models import Usuario
-from .models import Reserva, ResultadoPartido, SetResultado, validar_set
+from .models import Participante, Reserva, ResultadoPartido, SetResultado, validar_set
 from datetime import datetime, timedelta
 
 
@@ -53,16 +53,31 @@ class ReservaForm(forms.ModelForm):
 
 
 class ResultadoPartidoForm(forms.Form):
-    """No es ModelForm: los equipos son M2M (solo se pueden fijar tras
-    guardar) y los sets son varios objetos relacionados — más simple
-    validarlo todo junto aquí y orquestar la creación en save()."""
+    """No es ModelForm: los jugadores pueden ser un Usuario con perfil o un
+    invitado sin cuenta (solo un nombre), y los sets son varios objetos
+    relacionados — más simple validarlo todo junto aquí y orquestar la
+    creación en save()."""
 
     equipo_a_companero = forms.ModelChoiceField(
         queryset=Usuario.objects.none(), required=False, label='Tu compañero (dobles, opcional)',
     )
-    equipo_b_jugador1 = forms.ModelChoiceField(queryset=Usuario.objects.none(), label='Rival 1')
+    equipo_a_companero_invitado = forms.CharField(
+        required=False, max_length=100, label='…o nombre si no tiene perfil',
+        widget=forms.TextInput(attrs={'placeholder': 'Nombre (sin perfil en la app)'}),
+    )
+    equipo_b_jugador1 = forms.ModelChoiceField(
+        queryset=Usuario.objects.none(), required=False, label='Rival 1',
+    )
+    equipo_b_jugador1_invitado = forms.CharField(
+        required=False, max_length=100, label='…o nombre si no tiene perfil',
+        widget=forms.TextInput(attrs={'placeholder': 'Nombre (sin perfil en la app)'}),
+    )
     equipo_b_jugador2 = forms.ModelChoiceField(
         queryset=Usuario.objects.none(), required=False, label='Rival 2 (dobles, opcional)',
+    )
+    equipo_b_jugador2_invitado = forms.CharField(
+        required=False, max_length=100, label='…o nombre si no tiene perfil',
+        widget=forms.TextInput(attrs={'placeholder': 'Nombre (sin perfil en la app)'}),
     )
 
     set1_a = forms.IntegerField(min_value=0, max_value=30, label='Set 1 — vosotros')
@@ -84,6 +99,16 @@ class ResultadoPartidoForm(forms.Form):
         self.fields['equipo_b_jugador1'].queryset = candidatos
         self.fields['equipo_b_jugador2'].queryset = candidatos
 
+    @property
+    def pares_jugador(self):
+        """(campo de selección, campo de nombre libre) para cada hueco de
+        jugador — para que la plantilla los pinte juntos."""
+        return [
+            (self['equipo_a_companero'], self['equipo_a_companero_invitado']),
+            (self['equipo_b_jugador1'], self['equipo_b_jugador1_invitado']),
+            (self['equipo_b_jugador2'], self['equipo_b_jugador2_invitado']),
+        ]
+
     def _sets_introducidos(self, cleaned):
         sets = []
         for i in (1, 2, 3):
@@ -98,15 +123,43 @@ class ResultadoPartidoForm(forms.Form):
             sets.append({'numero': i, 'a': a, 'b': b, 'es_super_tiebreak': es_stb})
         return sets
 
+    def _resolver_jugador(self, cleaned, campo_usuario, campo_invitado, requerido, etiqueta):
+        """('usuario', Usuario) | ('invitado', nombre) | None (slot vacío)."""
+        usuario = cleaned.get(campo_usuario)
+        nombre = (cleaned.get(campo_invitado) or '').strip()
+        if usuario and nombre:
+            self.add_error(None, f'{etiqueta}: elige un vecino con perfil o escribe un nombre, no las dos cosas.')
+            return None
+        if usuario:
+            return ('usuario', usuario)
+        if nombre:
+            return ('invitado', nombre)
+        if requerido:
+            self.add_error(None, f'Falta {etiqueta[0].lower()}{etiqueta[1:]}.')
+        return None
+
     def clean(self):
         cleaned = super().clean()
 
-        companero = cleaned.get('equipo_a_companero')
-        rival1 = cleaned.get('equipo_b_jugador1')
-        rival2 = cleaned.get('equipo_b_jugador2')
-        jugadores = [j for j in [self.usuario, companero, rival1, rival2] if j]
-        if len(jugadores) != len({j.pk for j in jugadores}):
-            self.add_error(None, 'Un jugador no puede estar en los dos equipos ni repetirse.')
+        companero = self._resolver_jugador(
+            cleaned, 'equipo_a_companero', 'equipo_a_companero_invitado', False, 'Tu compañero'
+        )
+        rival1 = self._resolver_jugador(
+            cleaned, 'equipo_b_jugador1', 'equipo_b_jugador1_invitado', True, 'Rival 1'
+        )
+        rival2 = self._resolver_jugador(
+            cleaned, 'equipo_b_jugador2', 'equipo_b_jugador2_invitado', False, 'Rival 2'
+        )
+
+        equipo_a = [('usuario', self.usuario)] + ([companero] if companero else [])
+        equipo_b = ([rival1] if rival1 else []) + ([rival2] if rival2 else [])
+
+        usuarios_pks = [j[1].pk for j in equipo_a + equipo_b if j[0] == 'usuario']
+        if len(usuarios_pks) != len(set(usuarios_pks)):
+            self.add_error(None, 'Un jugador con perfil no puede estar en los dos equipos ni repetirse.')
+
+        cleaned['equipo_a'] = equipo_a
+        cleaned['equipo_b'] = equipo_b
 
         sets = self._sets_introducidos(cleaned)
         if not sets:
@@ -137,15 +190,21 @@ class ResultadoPartidoForm(forms.Form):
         cleaned['sets'] = sets
         return cleaned
 
+    @staticmethod
+    def _crear_participante(resultado, equipo, jugador):
+        tipo, valor = jugador
+        if tipo == 'usuario':
+            Participante.objects.create(resultado=resultado, equipo=equipo, usuario=valor)
+        else:
+            Participante.objects.create(resultado=resultado, equipo=equipo, nombre_invitado=valor)
+
     def save(self):
         with transaction.atomic():
             resultado = ResultadoPartido.objects.create(reserva=self.reserva, creado_por=self.usuario)
-            resultado.equipo_a.add(self.usuario)
-            if self.cleaned_data.get('equipo_a_companero'):
-                resultado.equipo_a.add(self.cleaned_data['equipo_a_companero'])
-            resultado.equipo_b.add(self.cleaned_data['equipo_b_jugador1'])
-            if self.cleaned_data.get('equipo_b_jugador2'):
-                resultado.equipo_b.add(self.cleaned_data['equipo_b_jugador2'])
+            for jugador in self.cleaned_data['equipo_a']:
+                self._crear_participante(resultado, Participante.EQUIPO_A, jugador)
+            for jugador in self.cleaned_data['equipo_b']:
+                self._crear_participante(resultado, Participante.EQUIPO_B, jugador)
             for s in self.cleaned_data['sets']:
                 SetResultado.objects.create(
                     resultado=resultado, numero=s['numero'],

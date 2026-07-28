@@ -16,6 +16,15 @@
     </div>
   </div>
 
+  <div class="flex items-center gap-4 text-sm mb-6 -mt-2">
+    <a href="{% url 'social:directorio' %}" class="text-slate-400 hover:text-cyan-300 transition-colors">
+      {{ n_seguidores }} seguidor{{ n_seguidores|pluralize }}
+    </a>
+    <a href="{% url 'social:directorio' %}" class="text-slate-400 hover:text-cyan-300 transition-colors">
+      {{ n_siguiendo }} siguiendo
+    </a>
+  </div>
+
   <form method="post" class="space-y-4">
     {% csrf_token %}
     {% if form.non_field_errors %}

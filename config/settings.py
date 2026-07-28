@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'pistas',
     'reservas',
     'panel',
+    'social',
 ]
 
 MIDDLEWARE = [

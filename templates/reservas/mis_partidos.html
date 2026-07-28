@@ -65,6 +65,9 @@
           <div class="text-sm">
             <span class="text-slate-300">{{ r.reserva.pista.nombre }} · {{ r.reserva.fecha|date:"d/m/Y" }}</span>
             <span class="ml-2 text-slate-500">
+              vs {% for j in r.rivales %}{{ j.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </span>
+            <span class="ml-2 text-slate-500">
               {% for s in r.sets.all %}{{ s.juegos_equipo_a }}-{{ s.juegos_equipo_b }}{% if not forloop.last %}, {% endif %}{% endfor %}
             </span>
           </div>

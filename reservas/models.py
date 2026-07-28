@@ -146,8 +146,6 @@ class ResultadoPartido(models.Model):
     ]
 
     reserva = models.OneToOneField(Reserva, on_delete=models.CASCADE, related_name='resultado')
-    equipo_a = models.ManyToManyField(Usuario, related_name='resultados_equipo_a')
-    equipo_b = models.ManyToManyField(Usuario, related_name='resultados_equipo_b')
     estado = models.CharField(max_length=20, choices=ESTADOS, default=ESTADO_PENDIENTE)
     creado_por = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='resultados_creados')
     fecha_registro = models.DateTimeField(auto_now_add=True)
@@ -188,21 +186,73 @@ class ResultadoPartido(models.Model):
             return 'B'
         return None
 
+    def jugadores(self, equipo):
+        return self.participantes.filter(equipo=equipo)
+
     def gano(self, usuario):
         """True/False/None (no jugó este partido) para saber si `usuario` ganó."""
         ganador = self.ganador
         if ganador is None:
             return None
-        equipo_ganador = self.equipo_a if ganador == 'A' else self.equipo_b
-        if equipo_ganador.filter(pk=usuario.pk).exists():
+        equipo_ganador = Participante.EQUIPO_A if ganador == 'A' else Participante.EQUIPO_B
+        if self.participantes.filter(equipo=equipo_ganador, usuario=usuario).exists():
             return True
-        equipo_perdedor = self.equipo_b if ganador == 'A' else self.equipo_a
-        if equipo_perdedor.filter(pk=usuario.pk).exists():
+        equipo_perdedor = Participante.EQUIPO_B if ganador == 'A' else Participante.EQUIPO_A
+        if self.participantes.filter(equipo=equipo_perdedor, usuario=usuario).exists():
             return False
         return None
 
     def __str__(self):
         return f'Resultado de {self.reserva}'
+
+
+class Participante(models.Model):
+    """Un jugador de un ResultadoPartido: o bien un Usuario con perfil, o
+    bien un invitado sin cuenta (solo un nombre). Modelo aparte en vez de
+    M2M porque hace falta poder representar jugadores sin Usuario."""
+
+    EQUIPO_A = 'A'
+    EQUIPO_B = 'B'
+    EQUIPOS = [(EQUIPO_A, 'Equipo A'), (EQUIPO_B, 'Equipo B')]
+
+    resultado = models.ForeignKey(ResultadoPartido, on_delete=models.CASCADE, related_name='participantes')
+    equipo = models.CharField(max_length=1, choices=EQUIPOS)
+    usuario = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, null=True, blank=True, related_name='participaciones'
+    )
+    nombre_invitado = models.CharField('Nombre (sin perfil)', max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = 'Participante'
+        verbose_name_plural = 'Participantes'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(usuario__isnull=False, nombre_invitado='')
+                    | (models.Q(usuario__isnull=True) & ~models.Q(nombre_invitado=''))
+                ),
+                name='participante_usuario_o_invitado',
+            ),
+        ]
+
+    def clean(self):
+        if self.usuario_id and self.nombre_invitado:
+            raise ValidationError('Un participante es un usuario con perfil o un invitado, no las dos cosas.')
+        if not self.usuario_id and not self.nombre_invitado:
+            raise ValidationError('Falta el usuario o el nombre del invitado.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @property
+    def nombre(self):
+        if self.usuario_id:
+            return self.usuario.get_full_name() or self.usuario.username
+        return self.nombre_invitado
+
+    def __str__(self):
+        return f'{self.nombre} (equipo {self.equipo})'
 
 
 class SetResultado(models.Model):

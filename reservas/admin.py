@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Reserva, ResultadoPartido, SetResultado
+from .models import Participante, Reserva, ResultadoPartido, SetResultado
 
 
 @admin.register(Reserva)
@@ -20,9 +20,14 @@ class SetResultadoInline(admin.TabularInline):
     extra = 0
 
 
+class ParticipanteInline(admin.TabularInline):
+    model = Participante
+    extra = 0
+
+
 @admin.register(ResultadoPartido)
 class ResultadoPartidoAdmin(admin.ModelAdmin):
     list_display = ('reserva', 'estado', 'creado_por', 'fecha_registro')
     list_filter = ('estado', 'reserva__pista__urbanizacion')
     search_fields = ('creado_por__username',)
-    inlines = [SetResultadoInline]
+    inlines = [ParticipanteInline, SetResultadoInline]

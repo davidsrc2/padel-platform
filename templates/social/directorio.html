@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Vecinos — Pádel{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+  <h1 class="text-xl font-bold text-slate-100">Vecinos</h1>
+  <div class="flex items-center gap-4 text-sm">
+    <span class="text-slate-400">{{ n_seguidores }} seguidor{{ n_seguidores|pluralize }}</span>
+    <span class="text-slate-400">{{ n_siguiendo }} siguiendo</span>
+    <a href="{% url 'social:feed' %}" class="text-cyan-400 hover:underline">Ver feed →</a>
+  </div>
+</div>
+
+{% if vecinos %}
+  <div class="space-y-2">
+    {% for v in vecinos %}
+      <div class="glass rounded-xl p-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-cyan-500 to-violet-500 grid place-items-center text-sm font-bold text-slate-950">
+            {{ v.get_full_name|default:v.username|first|upper }}
+          </div>
+          <span class="text-sm text-slate-200">{{ v.get_full_name|default:v.username }}</span>
+        </div>
+        {% if v.le_sigo %}
+          <form method="post" action="{% url 'social:dejar_de_seguir' v.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-xs px-3 py-1.5 rounded-lg glass text-slate-300 hover:border-red-400/40 hover:text-red-300 transition-colors">
+              Dejar de seguir
+            </button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'social:seguir' v.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 font-semibold">
+              Seguir
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm">No hay más vecinos en tu urbanización todavía.</p>
+{% endif %}
+{% endblock %}

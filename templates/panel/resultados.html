@@ -18,8 +18,8 @@
           — {% for s in r.sets.all %}{{ s.juegos_equipo_a }}-{{ s.juegos_equipo_b }}{% if not forloop.last %}, {% endif %}{% endfor %}
         </p>
         <p class="text-xs text-slate-500 mb-3">
-          Equipo A: {% for j in r.equipo_a.all %}{{ j.get_full_name|default:j.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
-          · Equipo B: {% for j in r.equipo_b.all %}{{ j.get_full_name|default:j.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+          Equipo A: {% for j in r.equipo_a_jugadores %}{{ j.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+          · Equipo B: {% for j in r.equipo_b_jugadores %}{{ j.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
         </p>
         <div class="flex items-center gap-3">
           <form method="post" action="{% url 'panel:resultado_resolver' r.pk %}?urbanizacion={{ urb.pk }}">

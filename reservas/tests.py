@@ -9,7 +9,7 @@ from pistas.models import BloqueoPista, Pista
 from accounts.models import Usuario
 from .estadisticas import calcular_estadisticas
 from .forms import ResultadoPartidoForm
-from .models import Reserva, ResultadoPartido, SetResultado, validar_set
+from .models import Participante, Reserva, ResultadoPartido, SetResultado, validar_set
 
 
 def _setup():
@@ -48,15 +48,19 @@ def _reserva_pasada(pista, usuario, dias_atras=1, hora_inicio=time(10, 0), hora_
     return r
 
 
-def _resultado_2_0(reserva, creador, companero, rival1, rival2=None):
-    """Crea un resultado 6-4, 6-3 (equipo A gana 2-0), pendiente de confirmar."""
+def _resultado_2_0(reserva, creador, companero, rival1, rival2=None, rival1_invitado=None):
+    """Crea un resultado 6-4, 6-3 (equipo A gana 2-0), pendiente de confirmar.
+    rival1_invitado (nombre) sustituye a rival1 (Usuario) si se indica."""
     resultado = ResultadoPartido.objects.create(reserva=reserva, creado_por=creador)
-    resultado.equipo_a.add(creador)
+    Participante.objects.create(resultado=resultado, equipo=Participante.EQUIPO_A, usuario=creador)
     if companero:
-        resultado.equipo_a.add(companero)
-    resultado.equipo_b.add(rival1)
+        Participante.objects.create(resultado=resultado, equipo=Participante.EQUIPO_A, usuario=companero)
+    if rival1_invitado:
+        Participante.objects.create(resultado=resultado, equipo=Participante.EQUIPO_B, nombre_invitado=rival1_invitado)
+    else:
+        Participante.objects.create(resultado=resultado, equipo=Participante.EQUIPO_B, usuario=rival1)
     if rival2:
-        resultado.equipo_b.add(rival2)
+        Participante.objects.create(resultado=resultado, equipo=Participante.EQUIPO_B, usuario=rival2)
     SetResultado.objects.create(resultado=resultado, numero=1, juegos_equipo_a=6, juegos_equipo_b=4)
     SetResultado.objects.create(resultado=resultado, numero=2, juegos_equipo_a=6, juegos_equipo_b=3)
     return resultado
@@ -237,8 +241,8 @@ class ResultadoPartidoFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         resultado = form.save()
         self.assertEqual(resultado.ganador, 'A')
-        self.assertEqual(resultado.equipo_a.count(), 2)
-        self.assertEqual(resultado.equipo_b.count(), 2)
+        self.assertEqual(resultado.jugadores(Participante.EQUIPO_A).count(), 2)
+        self.assertEqual(resultado.jugadores(Participante.EQUIPO_B).count(), 2)
 
     def test_un_set_cada_uno_sin_tercero_da_error(self):
         urb, pista, user1, user2, user3, user4 = _setup_4_jugadores()
@@ -263,6 +267,38 @@ class ResultadoPartidoFormTest(TestCase):
         reserva = _reserva_pasada(pista, user1)
         form = self._form(user1, reserva, {
             'equipo_b_jugador1': user1.pk,
+            'set1_a': 6, 'set1_b': 4, 'set2_a': 6, 'set2_b': 3,
+        })
+        self.assertFalse(form.is_valid())
+
+    def test_rival_invitado_sin_perfil(self):
+        urb, pista, user1, user2 = _setup()
+        reserva = _reserva_pasada(pista, user1)
+        form = self._form(user1, reserva, {
+            'equipo_b_jugador1_invitado': 'Pepe de fuera',
+            'set1_a': 6, 'set1_b': 4, 'set2_a': 6, 'set2_b': 3,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        resultado = form.save()
+        rivales = list(resultado.jugadores(Participante.EQUIPO_B))
+        self.assertEqual(len(rivales), 1)
+        self.assertIsNone(rivales[0].usuario)
+        self.assertEqual(rivales[0].nombre, 'Pepe de fuera')
+
+    def test_mezcla_perfil_y_nombre_en_mismo_hueco_da_error(self):
+        urb, pista, user1, user2 = _setup()
+        reserva = _reserva_pasada(pista, user1)
+        form = self._form(user1, reserva, {
+            'equipo_b_jugador1': user2.pk,
+            'equipo_b_jugador1_invitado': 'Pepe de fuera',
+            'set1_a': 6, 'set1_b': 4, 'set2_a': 6, 'set2_b': 3,
+        })
+        self.assertFalse(form.is_valid())
+
+    def test_falta_rival_obligatorio_da_error(self):
+        urb, pista, user1, user2 = _setup()
+        reserva = _reserva_pasada(pista, user1)
+        form = self._form(user1, reserva, {
             'set1_a': 6, 'set1_b': 4, 'set2_a': 6, 'set2_b': 3,
         })
         self.assertFalse(form.is_valid())
