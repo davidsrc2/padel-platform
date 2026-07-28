@@ -1,6 +1,9 @@
 from pathlib import Path
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-only-change-in-production')
@@ -139,6 +142,18 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
 SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Observabilidad de errores en producción. Sin SENTRY_DSN definida, esto no
+# hace nada (igual que VAPID más arriba) — local y tests siguen igual.
+SENTRY_DSN = os.environ.get('SENTRY_DSN', '')
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment=os.environ.get('SENTRY_ENVIRONMENT', 'production'),
+        traces_sample_rate=float(os.environ.get('SENTRY_TRACES_SAMPLE_RATE', 0.1)),
+        send_default_pii=False,
+    )
 
 LOGGING = {
     'version': 1,

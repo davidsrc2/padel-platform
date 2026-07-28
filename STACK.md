@@ -7,6 +7,7 @@
 - PWA instalable (manifest, iconos, meta tags iOS/Android)
 - whitenoise + gunicorn para producción
 - Auth custom: `accounts.Usuario` (roles: `vecino`, `admin_urb`, `superadmin`)
+- Observabilidad: Sentry (`sentry-sdk[django]`), activado solo si `SENTRY_DSN` está definida (igual que VAPID — sin la variable, no hace nada)
 
 ## Apps
 
