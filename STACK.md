@@ -14,8 +14,13 @@
 - `urbanizaciones` — el modelo `Urbanizacion` (tenant), sus ajustes (horarios, límites de reserva)
 - `viviendas` — `Portal` y `Vivienda`, jerarquía urbanización → portal → vivienda
 - `pistas` — `Pista` y `BloqueoPista` (bloqueos de mantenimiento)
-- `reservas` — el núcleo: reservas, calendario, franjas, recordatorios
+- `reservas` — el núcleo: reservas, calendario, franjas, recordatorios, resultados de partidos (`ResultadoPartido`/`SetResultado`/`Participante`) y estadísticas por jugador
 - `panel` — panel de gestión para `admin_urb`/`superadmin` (no usan el admin de Django)
+- `social` — capa social mínima: seguir vecinos (`Seguimiento`) y un feed con los resultados confirmados de a quién sigues. Solo se puede seguir dentro de la misma urbanización (mismo límite de tenant que el resto de la app)
+
+## Partidos: jugadores con y sin perfil
+
+`ResultadoPartido` no usa M2M a `Usuario` para los equipos — usa un modelo `Participante` (FK a `ResultadoPartido` + equipo A/B + o bien `usuario` o bien `nombre_invitado`, nunca ambos, constraint a nivel de BD). Así se puede registrar un partido contra alguien sin cuenta en la app. Consecuencia: si el rival es solo un invitado, nadie puede confirmar/disputar ese resultado desde la UI (el permiso exige un `Usuario` en el equipo rival) — se queda "pendiente" hasta que lo autoconfirma el comando `autoconfirmar_resultados` a las 48h, igual que cualquier otro resultado sin respuesta.
 
 ## Multi-tenencia (cómo está montado ahora)
 
