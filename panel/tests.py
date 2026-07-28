@@ -49,3 +49,45 @@ class PanelMultiTenanciaTest(TestCase):
         )
         self.assertEqual(resp.status_code, 404)
         self.assertTrue(Portal.objects.filter(pk=portal_b.pk).exists())
+
+
+class SuperadminOverviewTest(TestCase):
+
+    def _crear_superadmin(self, username='superadmin1'):
+        urb, portal, vivienda, _ = _crear_urbanizacion_con_admin(f'Urb de {username}', f'admin_de_{username}')
+        return Usuario.objects.create_user(
+            username=username, password='pass', vivienda=vivienda,
+            rol=Usuario.ROL_SUPERADMIN, aprobado=True,
+        )
+
+    def test_requiere_login(self):
+        resp = self.client.get(reverse('panel:superadmin_overview'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/accounts/login/', resp.url)
+
+    def test_admin_urb_no_puede_acceder(self):
+        urb, portal, vivienda, admin = _crear_urbanizacion_con_admin('Urb', 'admin1')
+        self.client.force_login(admin)
+        resp = self.client.get(reverse('panel:superadmin_overview'))
+        self.assertRedirects(resp, reverse('panel:inicio'))
+
+    def test_superadmin_ve_todas_las_urbanizaciones(self):
+        superadmin = self._crear_superadmin()
+        urb_a, _, _, _ = _crear_urbanizacion_con_admin('Urb Alfa', 'admin_alfa')
+        urb_b, _, _, _ = _crear_urbanizacion_con_admin('Urb Beta', 'admin_beta')
+
+        self.client.force_login(superadmin)
+        resp = self.client.get(reverse('panel:superadmin_overview'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Urb Alfa')
+        self.assertContains(resp, 'Urb Beta')
+
+    def test_busqueda_filtra_por_nombre(self):
+        superadmin = self._crear_superadmin()
+        _crear_urbanizacion_con_admin('Los Pinos', 'admin_pinos')
+        _crear_urbanizacion_con_admin('Las Palmeras', 'admin_palmeras')
+
+        self.client.force_login(superadmin)
+        resp = self.client.get(reverse('panel:superadmin_overview'), {'q': 'Pinos'})
+        self.assertContains(resp, 'Los Pinos')
+        self.assertNotContains(resp, 'Las Palmeras')

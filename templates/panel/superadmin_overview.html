@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Todas las urbanizaciones — Panel{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+  <h1 class="text-xl font-bold text-slate-100">Todas las urbanizaciones</h1>
+  <a href="{% url 'panel:urbanizacion_crear' %}" class="text-sm text-cyan-400 hover:underline whitespace-nowrap">
+    + Nueva urbanización
+  </a>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+  <div class="glass rounded-2xl p-6">
+    <p class="text-sm text-slate-400 mb-1">Urbanizaciones</p>
+    <p class="text-3xl font-bold text-slate-100">{{ n_urbanizaciones }}</p>
+  </div>
+  <div class="glass rounded-2xl p-6">
+    <p class="text-sm text-slate-400 mb-1">Vecinos (todas)</p>
+    <p class="text-3xl font-bold text-slate-100">{{ n_vecinos_total }}</p>
+  </div>
+  <div class="glass rounded-2xl p-6">
+    <p class="text-sm text-slate-400 mb-1">Reservas últimos 30 días</p>
+    <p class="text-3xl font-bold text-slate-100">{{ n_reservas_30d_total }}</p>
+  </div>
+</div>
+
+<form method="get" class="mb-6">
+  <input type="text" name="q" value="{{ query }}" placeholder="Buscar urbanización por nombre…"
+    class="w-full sm:w-80">
+</form>
+
+{% if comunidades %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for c in comunidades %}
+      <div class="glass rounded-2xl p-6 relative">
+        {% if c.n_disputados %}
+          <span class="absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400">
+            {{ c.n_disputados }} disputado{{ c.n_disputados|pluralize }}
+          </span>
+        {% elif c.n_pendientes %}
+          <span class="absolute top-4 right-4 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300">
+            {{ c.n_pendientes }} pendiente{{ c.n_pendientes|pluralize }}
+          </span>
+        {% endif %}
+
+        <p class="text-lg font-semibold text-slate-100 mb-4 pr-16">{{ c.urb.nombre }}</p>
+
+        <div class="grid grid-cols-3 gap-2 text-center mb-4">
+          <div>
+            <p class="text-lg font-bold text-slate-100">{{ c.n_vecinos }}</p>
+            <p class="text-xs text-slate-500">Vecinos</p>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-slate-100">{{ c.n_pistas }}</p>
+            <p class="text-xs text-slate-500">Pistas</p>
+          </div>
+          <div>
+            <p class="text-lg font-bold text-slate-100">{{ c.reservas_30d }}</p>
+            <p class="text-xs text-slate-500">Reservas 30d</p>
+          </div>
+        </div>
+
+        <a href="{% url 'panel:inicio' %}?urbanizacion={{ c.urb.pk }}"
+          class="block text-center text-sm px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 text-slate-950 font-semibold">
+          Gestionar →
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-slate-500 text-sm">
+    {% if query %}No hay ninguna urbanización que coincida con "{{ query }}".{% else %}No hay ninguna urbanización creada todavía.{% endif %}
+  </p>
+{% endif %}
+{% endblock %}

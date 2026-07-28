@@ -3,7 +3,7 @@
 
 {% block content %}
 {% if urbanizaciones %}
-<div class="flex items-center gap-3 mb-4">
+<div class="flex items-center gap-3 mb-4 flex-wrap">
   <form method="get" class="inline">
     <label class="text-sm text-slate-400 mr-2">Urbanización:</label>
     <select name="urbanizacion" onchange="this.form.submit()" class="!w-auto text-sm">
@@ -12,6 +12,9 @@
       {% endfor %}
     </select>
   </form>
+  <a href="{% url 'panel:superadmin_overview' %}" class="text-xs text-cyan-400 hover:underline whitespace-nowrap">
+    Ver todas →
+  </a>
   <a href="{% url 'panel:urbanizacion_crear' %}" class="text-xs text-cyan-400 hover:underline whitespace-nowrap">
     + Nueva urbanización
   </a>
@@ -37,6 +40,23 @@
     {% endif %}
   </p>
 {% else %}
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+    <div class="glass rounded-2xl p-6">
+      <p class="text-sm text-slate-400 mb-1">Reservas hoy</p>
+      <p class="text-3xl font-bold text-slate-100">{{ reservas_hoy }}</p>
+    </div>
+    <div class="glass rounded-2xl p-6">
+      <p class="text-sm text-slate-400 mb-1">Reservas esta semana</p>
+      <p class="text-3xl font-bold text-slate-100">{{ reservas_semana }}</p>
+    </div>
+    <div class="glass rounded-2xl p-6">
+      <p class="text-sm text-slate-400 mb-1">Resultados por confirmar</p>
+      <p class="text-3xl font-bold {% if n_resultados_pendientes %}text-amber-300{% else %}text-slate-100{% endif %}">
+        {{ n_resultados_pendientes }}
+      </p>
+    </div>
+  </div>
+
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <a href="{% url 'panel:urbanizacion' %}?urbanizacion={{ urb.pk }}"
       class="glass rounded-2xl p-6 hover:border-cyan-400/40 transition-colors">
@@ -78,6 +98,29 @@
         </span>
       {% endif %}
     </a>
+  </div>
+
+  <div class="mt-6">
+    <h2 class="text-sm font-semibold text-cyan-300 mb-3">Actividad reciente</h2>
+    {% if actividad_reciente %}
+      <div class="glass rounded-2xl divide-y divide-white/10">
+        {% for r in actividad_reciente %}
+          <div class="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+            <span class="text-slate-200">
+              {{ r.usuario.get_full_name|default:r.usuario.username }}
+              <span class="text-slate-500">· {{ r.pista.nombre }} · {{ r.fecha|date:"d/m/Y" }} {{ r.hora_inicio|time:"H:i" }}</span>
+            </span>
+            {% if r.estado == 'cancelada' %}
+              <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 whitespace-nowrap">Cancelada</span>
+            {% else %}
+              <span class="text-slate-500 text-xs whitespace-nowrap">hace {{ r.creada|timesince }}</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-slate-500 text-sm">Todavía no hay reservas.</p>
+    {% endif %}
   </div>
 {% endif %}
 {% endblock %}

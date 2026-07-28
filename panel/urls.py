@@ -12,6 +12,7 @@ app_name = 'panel'
 
 urlpatterns = [
     path('', views.inicio, name='inicio'),
+    path('todas/', views.superadmin_overview, name='superadmin_overview'),
 
     path('urbanizacion/', urbanizaciones_views.panel_urbanizacion, name='urbanizacion'),
     path('urbanizacion/crear/', urbanizaciones_views.panel_urbanizacion_crear, name='urbanizacion_crear'),
