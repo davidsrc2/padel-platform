@@ -1,11 +1,14 @@
 import json
 
+from django.contrib.auth import views as auth_views
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 from panel.permisos import limitar_a_urbanizacion, panel_required, resolver_urbanizacion
 from .emails import enviar_aprobacion_usuario
 from .forms import CrearComunidadForm, PerfilForm, RegistroForm
@@ -13,8 +16,43 @@ from .models import PushSubscription, Usuario
 from viviendas.models import Portal, Vivienda
 
 
+# Límites por IP en los formularios públicos sin login (login, registro,
+# restablecer contraseña) — gratis, vía django-ratelimit + la caché en
+# memoria por defecto de Django (no hace falta Redis a este tamaño). Con
+# block=False dejamos que la vista decida qué responder, para mostrar un
+# mensaje normal en vez de un 403 desnudo.
+
+class LoginRateLimitView(auth_views.LoginView):
+    template_name = 'accounts/login.html'
+
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False))
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            messages.error(request, 'Demasiados intentos de inicio de sesión. Espera un minuto y vuelve a intentarlo.')
+            return self.get(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
+
+
+class PasswordResetRateLimitView(auth_views.PasswordResetView):
+    template_name = 'accounts/password_reset_form.html'
+    email_template_name = 'accounts/password_reset_email.html'
+    subject_template_name = 'accounts/password_reset_subject.txt'
+    success_url = reverse_lazy('accounts:password_reset_done')
+
+    @method_decorator(ratelimit(key='ip', rate='5/h', method='POST', block=False))
+    def post(self, request, *args, **kwargs):
+        if getattr(request, 'limited', False):
+            messages.error(request, 'Demasiadas solicitudes de restablecimiento de contraseña. Inténtalo más tarde.')
+            return self.get(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
+
+
+@ratelimit(key='ip', rate='5/h', method='POST', block=False)
 def registro(request):
     if request.method == 'POST':
+        if getattr(request, 'limited', False):
+            messages.error(request, 'Demasiados registros desde esta conexión. Inténtalo más tarde.')
+            return render(request, 'accounts/registro.html', {'form': RegistroForm(request.POST)})
         form = RegistroForm(request.POST)
         if form.is_valid():
             form.save()

@@ -8,6 +8,7 @@
 - whitenoise + gunicorn para producción
 - Auth custom: `accounts.Usuario` (roles: `vecino`, `admin_urb`, `superadmin`)
 - Observabilidad: Sentry (`sentry-sdk[django]`), activado solo si `SENTRY_DSN` está definida (igual que VAPID — sin la variable, no hace nada)
+- Rate limiting en login/registro/reset de contraseña: `django-ratelimit` + la caché en memoria por defecto de Django (sin coste, sin Redis). `LoginRateLimitView`/`PasswordResetRateLimitView` en `accounts/views.py` — 10 intentos/min en login, 5/hora en registro y en solicitar reset de contraseña, por IP. Con `block=False`: en vez de un 403 crudo, se muestra un mensaje normal vía `messages.error`
 
 ## Apps
 

@@ -1,6 +1,7 @@
 asgiref==3.12.1
 Django==6.0.7
 django-anymail[resend]==15.0
+django-ratelimit==4.1.0
 django-tailwind==4.5.0
 gunicorn==23.0.0
 pillow==12.3.0

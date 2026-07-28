@@ -1,6 +1,7 @@
 import json
 from unittest.mock import patch
 
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from urbanizaciones.models import Urbanizacion
@@ -32,6 +33,39 @@ class RegistroTest(TestCase):
         usuario = Usuario.objects.get(username='nuevo_vecino')
         self.assertFalse(usuario.aprobado)
         self.assertEqual(usuario.rol, Usuario.ROL_VECINO)
+
+
+class RateLimitTest(TestCase):
+    """django-ratelimit comparte la caché en memoria entre tests (no se
+    limpia sola entre TestCase), así que hay que vaciarla a mano para no
+    contaminar otros tests que también hagan POST a estas mismas rutas."""
+
+    def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        cache.clear()
+
+    def test_login_se_bloquea_pasado_el_limite(self):
+        for _ in range(10):
+            self.client.post('/accounts/login/', {'username': 'nadie', 'password': 'mal'})
+        resp = self.client.post('/accounts/login/', {'username': 'nadie', 'password': 'mal'})
+        self.assertContains(resp, 'Demasiados intentos de inicio de sesión')
+
+    def test_login_normal_no_se_bloquea_dentro_del_limite(self):
+        urb = Urbanizacion.objects.create(nombre='Test', direccion='x')
+        portal = Portal.objects.create(urbanizacion=urb, nombre='A')
+        vivienda = Vivienda.objects.create(portal=portal, piso='1')
+        Usuario.objects.create_user(username='vecino_ok', password='contraseña-larga-123', vivienda=vivienda, aprobado=True)
+
+        resp = self.client.post('/accounts/login/', {'username': 'vecino_ok', 'password': 'contraseña-larga-123'})
+        self.assertEqual(resp.status_code, 302)
+
+    def test_registro_se_bloquea_pasado_el_limite(self):
+        for _ in range(5):
+            self.client.post('/accounts/registro/', {})
+        resp = self.client.post('/accounts/registro/', {})
+        self.assertContains(resp, 'Demasiados registros')
 
 
 class CrearComunidadTest(TestCase):

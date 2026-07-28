@@ -5,7 +5,7 @@ from . import views
 app_name = 'accounts'
 
 urlpatterns = [
-    path('login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('login/', views.LoginRateLimitView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('registro/', views.registro, name='registro'),
     path('crear-comunidad/', views.crear_comunidad, name='crear_comunidad'),
@@ -15,12 +15,7 @@ urlpatterns = [
     path('ajax/portales/', views.portales_ajax, name='portales_ajax'),
     path('ajax/viviendas/', views.viviendas_ajax, name='viviendas_ajax'),
 
-    path('password-reset/', auth_views.PasswordResetView.as_view(
-        template_name='accounts/password_reset_form.html',
-        email_template_name='accounts/password_reset_email.html',
-        subject_template_name='accounts/password_reset_subject.txt',
-        success_url=reverse_lazy('accounts:password_reset_done'),
-    ), name='password_reset'),
+    path('password-reset/', views.PasswordResetRateLimitView.as_view(), name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='accounts/password_reset_done.html',
     ), name='password_reset_done'),
